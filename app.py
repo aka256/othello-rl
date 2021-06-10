@@ -57,7 +57,7 @@ class OthelloApp(tk.Frame):
     self.focus_set()
 
     # オセロ盤の表示
-    self.othello_main = OthelloBoardGUI(self, 0, 0)
+    self.othello_main = OthelloBoardGUI(self, 0, 0, 600)
     self.__on_new_game()
 
     # stateのラベル
@@ -86,7 +86,7 @@ class OthelloApp(tk.Frame):
     self.othello_main.undo()
 
 
-class OthelloBoardGUI:
+class OthelloBoardGUI(tk.Canvas):
   """
   オセロの盤面を管理するクラス
 
@@ -96,43 +96,55 @@ class OthelloBoardGUI:
     オセロ盤の線の幅
   board_width : int
     オセロ盤の幅、高さ
+  frame_width : int
+    コマの幅、高さ
+    候補マスの表示もこれによる
   game : othello.OthelloBitBoard
     OthelloBitBoardを管理する変数
   """
-  line_width = 4
-  board_width = 600
 
-  def __init__(self, parent, x: int, y: int) -> None:
-    self.__draw_othello_board(parent, 0, 0)
-    
-
-  def start_new_game(self, first_player_num: int = 0):
-    self.game = othello.OthelloBitBoard(first_player_num)
-    self.__draw_othello_state(self.game)
-
-  def __draw_othello_board(self, parent, _x: int, _y: int) -> None:
+  def __init__(self, parent, place_x: int, place_y: int, board_width: int) -> None:
     """
-    オセロ盤の表示を行うメソッド
+    コンストラクタ
 
     Parameters
     ----------
-    _x : int
-      表示するオセロ盤のx座標
-    _y : int
-      表示するオセロ盤のy座標
+    place_x : int
+      設置するキャンバスのx座標
+    place_y : int
+      設置するキャンバスのy座標
+    board_width : int
+      オセロ盤の幅、高さ
     """
+    self.board_width = board_width
+    self.line_width = board_width//150
+    self.frame_width = board_width//12
+
     # メインとなるキャンバス
-    self.othello_board = tk.Canvas(parent, highlightthickness=0, background='green')
-    self.othello_board.place(x=_x, y=_y, width=self.board_width, height=self.board_width)
+    super().__init__(parent, highlightthickness=0, background='green')
+    self.place(x=place_x, y=place_y, width=self.board_width, height=self.board_width)
 
     # キャンバスに左クリックをバインド(オセロ盤内なら全ての場所でクリックイベントを取得する)
-    self.othello_board.bind('<1>', self.__click_board)
+    self.bind('<1>', self.__click_board)
 
     # オセロ盤の線
     for i in range(9):
-      self.othello_board.create_line(0, (self.board_width-self.line_width)/8*i+self.line_width/2, self.board_width, (self.board_width-self.line_width)/8*i+self.line_width/2, width=self.line_width, fill='black')
-      self.othello_board.create_line((self.board_width-self.line_width)/8*i+self.line_width/2, 0, (self.board_width-self.line_width)/8*i+self.line_width/2, self.board_width, width=self.line_width, fill='black')
-  
+      self.create_line(0, (self.board_width-self.line_width)/8*i+self.line_width/2, self.board_width, (self.board_width-self.line_width)/8*i+self.line_width/2, width=self.line_width, fill='black')
+      self.create_line((self.board_width-self.line_width)/8*i+self.line_width/2, 0, (self.board_width-self.line_width)/8*i+self.line_width/2, self.board_width, width=self.line_width, fill='black')
+    
+
+  def start_new_game(self, first_player_num: int = 0) -> None:
+    """
+    新しくゲームを始めるメソッド
+
+    Parameters
+    ----------
+    first_player_num : int, dafault 0
+      最初のプレイヤー
+    """
+    self.game = othello.OthelloBitBoard(first_player_num)
+    self.__draw_othello_state(self.game)
+
   def __click_board(self, event: tk.Event) -> None:
     """
     オセロ盤をクリックしたときに呼び出されるメソッド
@@ -145,9 +157,9 @@ class OthelloBoardGUI:
     # クリックした位置を取得
     x = y = -1
     for i in range(8):
-      if event.x-self.board_width/16*(2*i+1)-25 <= x <= event.x-self.board_width/16*(2*i+1)+25:
+      if event.x-self.board_width/16*(2*i+1)-self.frame_width/2 <= x <= event.x-self.board_width/16*(2*i+1)+self.frame_width/2:
         x = i
-      if event.y-self.board_width/16*(2*i+1)-25 <= y <= event.y-self.board_width/16*(2*i+1)+25:
+      if event.y-self.board_width/16*(2*i+1)-self.frame_width/2 <= y <= event.y-self.board_width/16*(2*i+1)+self.frame_width/2:
         y = i
     
     if x != -1 and y != -1:
@@ -203,18 +215,18 @@ class OthelloBoardGUI:
       2: 候補マス
     """
     frame_tag = self.__get_frame_tag(x, y)
-    x1 = self.board_width/8*x+self.board_width/16-25
-    y1 = self.board_width/8*y+self.board_width/16-25
-    x2 = self.board_width/8*x+self.board_width/16+25
-    y2 = self.board_width/8*y+self.board_width/16+25
+    x1 = self.board_width/8*x+self.board_width/16-self.frame_width/2
+    y1 = self.board_width/8*y+self.board_width/16-self.frame_width/2
+    x2 = self.board_width/8*x+self.board_width/16+self.frame_width/2
+    y2 = self.board_width/8*y+self.board_width/16+self.frame_width/2
 
-    self.othello_board.delete(frame_tag)
+    self.delete(frame_tag)
     if state == 1:
-      self.othello_board.create_oval(x1, y1, x2, y2, fill='black', tags=frame_tag)
+      self.create_oval(x1, y1, x2, y2, fill='black', tags=frame_tag)
     elif state == 2:
-      self.othello_board.create_oval(x1, y1, x2, y2, fill='white', tags=frame_tag)
+      self.create_oval(x1, y1, x2, y2, fill='white', tags=frame_tag)
     elif state == 3:
-      self.othello_board.create_rectangle(x1, y1, x2, y2, fill='blue', tags=frame_tag)
+      self.create_rectangle(x1, y1, x2, y2, fill='blue', tags=frame_tag)
     else:
       pass
 
@@ -234,7 +246,10 @@ class OthelloBoardGUI:
       for idx_j, j in enumerate(i):
         self.__set_frame(idx_i, idx_j, j)
 
-  def undo(self):
+  def undo(self) -> None:
+    """
+    一手前に戻すメソッド
+    """
     self.game.undo()
     self.__draw_othello_state(self.game)
 
