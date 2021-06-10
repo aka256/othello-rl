@@ -16,20 +16,11 @@ class OthelloApp(tk.Frame):
     windowの幅
   height : int
     windowの高さ
-  line_width : int
-    オセロ盤の線の幅
-  board_width : int
-    オセロ盤の幅、高さ
-  game : othello.OthelloBitBoard
-    オセロクラスを保持している変数
-  othello_board : tk.Canvas
-    オセロ盤を表示しているキャンバス
+  othello_main : OthelloBoardGUI
+    メインのオセロ盤を保持している変数
   """
   width = 800
   height = 600
-  line_width = 4
-
-  board_width = 600
 
   def __init__(self, master: Optional[tk.Tk] = None) -> None:
     """
@@ -66,7 +57,7 @@ class OthelloApp(tk.Frame):
     self.focus_set()
 
     # オセロ盤の表示
-    self.__draw_othello_board(0, 0)
+    self.othello_main = OthelloBoardGUI(self, 0, 0)
     self.__on_new_game()
 
     # stateのラベル
@@ -81,8 +72,7 @@ class OthelloApp(tk.Frame):
     event : tk.Event or None, default None
       イベントのプロパティ
     """
-    self.game = othello.OthelloBitBoard(0)
-    self.__draw_othello_state(self.game)
+    self.othello_main.start_new_game()
 
   def __on_undo(self, event: Optional[tk.Event] = None) -> None:
     """
@@ -93,10 +83,34 @@ class OthelloApp(tk.Frame):
     event : tk.Event or None, default None
       イベントのプロパティ
     """
-    self.game.undo()
+    self.othello_main.undo()
+
+
+class OthelloBoardGUI:
+  """
+  オセロの盤面を管理するクラス
+
+  Attributes
+  ----------
+  line_width : int
+    オセロ盤の線の幅
+  board_width : int
+    オセロ盤の幅、高さ
+  game : othello.OthelloBitBoard
+    OthelloBitBoardを管理する変数
+  """
+  line_width = 4
+  board_width = 600
+
+  def __init__(self, parent, x: int, y: int) -> None:
+    self.__draw_othello_board(parent, 0, 0)
+    
+
+  def start_new_game(self, first_player_num: int = 0):
+    self.game = othello.OthelloBitBoard(first_player_num)
     self.__draw_othello_state(self.game)
 
-  def __draw_othello_board(self, _x: int, _y: int) -> None:
+  def __draw_othello_board(self, parent, _x: int, _y: int) -> None:
     """
     オセロ盤の表示を行うメソッド
 
@@ -108,7 +122,7 @@ class OthelloApp(tk.Frame):
       表示するオセロ盤のy座標
     """
     # メインとなるキャンバス
-    self.othello_board = tk.Canvas(self, highlightthickness=0, background='green')
+    self.othello_board = tk.Canvas(parent, highlightthickness=0, background='green')
     self.othello_board.place(x=_x, y=_y, width=self.board_width, height=self.board_width)
 
     # キャンバスに左クリックをバインド(オセロ盤内なら全ての場所でクリックイベントを取得する)
@@ -220,6 +234,9 @@ class OthelloApp(tk.Frame):
       for idx_j, j in enumerate(i):
         self.__set_frame(idx_i, idx_j, j)
 
+  def undo(self):
+    self.game.undo()
+    self.__draw_othello_state(self.game)
 
 if __name__ == '__main__':
   root = tk.Tk()
