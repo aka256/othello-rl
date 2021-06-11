@@ -2,6 +2,7 @@ import tkinter as tk
 import othello
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
 from typing import Union, Optional
+from agent import OthelloAgent
 
 basicConfig(level=DEBUG)
 logger = getLogger(__name__)
@@ -103,7 +104,7 @@ class OthelloBoardGUI(tk.Canvas):
     OthelloBitBoardを管理する変数
   """
 
-  def __init__(self, parent, place_x: int, place_y: int, board_width: int) -> None:
+  def __init__(self, parent: tk.Tk, agent: OthelloAgent, place_x: int, place_y: int, board_width: int) -> None:
     """
     コンストラクタ
 
@@ -119,6 +120,7 @@ class OthelloBoardGUI(tk.Canvas):
     self.board_width = board_width
     self.line_width = board_width//150
     self.frame_width = board_width//12
+    self.agent = agent
 
     # メインとなるキャンバス
     super().__init__(parent, highlightthickness=0, background='green')

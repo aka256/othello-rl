@@ -1,8 +1,5 @@
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
 from copy import copy
-from parse_save import dict_to_storage
-from typing import List
-import random
 from self_made_error import ArgsError
 
 #basicConfig(level=ERROR)
@@ -290,7 +287,7 @@ class OthelloBitBoard:
           print(' ', end='')
       print()
 
-  def get_board_state(self, show_candidate: bool = False) -> List[List[int]]:
+  def get_board_state(self, show_candidate: bool = False) -> list[list[int]]:
     """
     現在の盤の状態を返すメソッド
 
@@ -301,7 +298,7 @@ class OthelloBitBoard:
 
     Returns
     -------
-    board_state : List[List[int]]
+    board_state : list[list[int]]
       現在の盤の状態
     """
     if show_candidate:
@@ -326,13 +323,13 @@ class OthelloBitBoard:
     if len(self.past_data) > 0:
       self.board, self.now_turn, self.count = self.past_data.pop(-1)
 
-  def get_candidate(self) -> List[List[int]]:
+  def get_candidate(self) -> list[list[int]]:
     """
     候補マスのリストを返すメソッド
 
     Returns
     -------
-    candidate_list : List[List[int]]
+    candidate_list : list[list[int]]
       候補マスの座標のリスト
     """
     legal_board = self.__make_legal_board(self.now_turn)
@@ -344,6 +341,18 @@ class OthelloBitBoard:
     return retval
 
   def result(self) -> int:
+    """
+    ゲームの結果を返すメソッド
+
+    Returns
+    -------
+    result : int
+      ゲームの結果
+      - 0 : Player1の勝利
+      - 1 : Player2の勝利
+      - 2 : 引き分け
+      - -1: ゲームがまだ終了していない
+    """
     if not self.is_finished():
       return -1
     
@@ -360,40 +369,6 @@ class OthelloBitBoard:
     if a_count < b_count:  
       return 1
     return 2
-      
-class OthelloState:
-  """
-
-  """
-  def __init__(self) -> None:
-    pass
-
-  def get_index(self, othello: OthelloBitBoard) -> int:
-    l = othello.get_board_state(show_candidate=False)
-    a_corner = 0  # 0~4 3bit
-    b_corner = 0  # 0~4 3bit
-    diff = 64     # 0~128 8bit
-    blank = 0     # 0~60 6bit   total: 20bit -> 1,048,576
-    for i in range(8):
-      for j in range(8):
-        if (i == 0 or i == 7) and (j == 0 or j == 7):
-          if l[i][j] == 1:
-            a_corner += 1
-          elif l[i][j] == 2:
-            b_corner += 1
-        if l[i][j] == 0:
-          blank += 1
-        elif l[i][j] == othello.now_turn+1:
-          diff += 1
-        else:
-          diff -= 1
-    
-    retval = a_corner + (b_corner << 3) + (diff << 6) + (blank << 14)
-    if retval == 0:
-      logger.debug('a_corner: {}, b_corner: {}, diff: {}, blank: {}'.format(a_corner, b_corner, diff, blank))
-
-    return retval
-
 
 
 def do_othello(first_player_num):

@@ -1,5 +1,6 @@
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
-from othello import OthelloBitBoard, OthelloState
+from othello import OthelloBitBoard
+from features import OthelloFeatures, OthelloFeaturesv1
 from self_made_error import ArgsError
 import random
 from agent import OthelloAgent, OthelloRandomAgent
@@ -30,9 +31,9 @@ class QLearning:
 
 
 class OthelloQL:
-  def __init__(self, state: OthelloState, agent: OthelloAgent, epsilon: float) -> None:
+  def __init__(self, features: OthelloFeatures, agent: OthelloAgent, epsilon: float) -> None:
     self.ql = QLearning(0, 0.5, 0.5)
-    self.state = state
+    self.features = features
     self.epsilon = epsilon
     self.agent = agent
 
@@ -41,7 +42,7 @@ class OthelloQL:
     q_list = []
     tmp = []
     for x, y in candidate_list:
-      tmp.append([self.state.get_index(othello), x*8+y])
+      tmp.append([self.features.get_index(othello), x*8+y])
       q_list.append(self.ql.get(tmp[-1][0], tmp[-1][1]))
     
     if random.random() > self.epsilon:
@@ -145,7 +146,7 @@ def save_dict(path, dict: dict, use_json: bool = False) -> None:
 if __name__ == '__main__':
 
   epsilon = 0.3
-  ql = OthelloQL(OthelloState(), OthelloRandomAgent(), epsilon)
+  ql = OthelloQL(OthelloFeaturesv1(), OthelloRandomAgent(), epsilon)
 
 
   print('Learning')
