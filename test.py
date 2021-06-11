@@ -22,3 +22,12 @@ if 0x2:
 
 if -1:
   print(-1)
+
+a_corner = 0
+b_corner = 0
+diff = 71
+blank = 35
+print(diff << 6)
+print((b_corner << 3) + (diff << 6))
+retval = a_corner + (b_corner << 3) + (diff << 6)
+print(retval)
