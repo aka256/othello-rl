@@ -52,24 +52,27 @@ class OthelloFeaturesv1(OthelloFeatures):
     index : int
       盤面の特徴量のインデックス
     """
-    l = othello.get_board_state(show_candidate=False)
+    #l = othello.get_board_state(show_candidate=False)
     a_corner = 0  # 0~4 3bit
     b_corner = 0  # 0~4 3bit
     diff = 64     # 0~128 8bit
     blank = 0     # 0~60 6bit   total: 20bit -> 1,048,576
+    idx = 1
     for i in range(8):
       for j in range(8):
+        #idx = 1 << (i*8+j)
         if (i == 0 or i == 7) and (j == 0 or j == 7):
-          if l[i][j] == 1:
+          if othello.board[0] & idx:
             a_corner += 1
-          elif l[i][j] == 2:
+          elif othello.board[1] & idx:
             b_corner += 1
-        if l[i][j] == 0:
+        if othello.board[0] & idx:
           blank += 1
-        elif l[i][j] == othello.now_turn+1:
+        elif othello.board[othello.now_turn-1] & idx:
           diff += 1
         else:
           diff -= 1
+        idx <<= 1
     
     retval = a_corner + (b_corner << 3) + (diff << 6) + (blank << 14)
 

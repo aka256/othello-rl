@@ -2,9 +2,15 @@ from abc import ABCMeta, abstractmethod
 from othello import OthelloBitBoard
 from features import OthelloFeatures
 import random
-from self_made_error import EmptyListError, ArgsError
-from typing import Union
+from self_made_error import EmptyListError, ArgsError, OthelloCannotReverse
+from typing import Union, TypedDict
 from parse_save import parse_ql_json
+from copy import deepcopy, copy
+from positional_evaluation import OthelloPositionalEvaluation
+from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
+
+logger = getLogger(__name__)
+inf = float('inf')
 
 class OthelloAgent(metaclass=ABCMeta):
   """
@@ -90,6 +96,81 @@ class OthelloRandomAgent(OthelloAgent):
     result = othello.reverse(next[0], next[1])
 
     return othello, result
+
+Node = TypedDict('Node', {'game': OthelloBitBoard, 'coordinate': int, 'nodes': list})
+
+class OthelloMinMaxAgent(OthelloAgent):
+  """
+  MinMax手法を利用したagent
+
+  Attributes
+  ----------
+  deepth : int
+    ゲーム木の深さ
+  pos_evaluation : OthelloPositionalEvaluation
+    局面評価関数
+  root_player : int
+    ゲーム木のrootのプレイヤー
+  """
+  def __init__(self, deepth: int, pos_evaluation: OthelloPositionalEvaluation) -> None:
+    """
+    コンストラクタ
+
+    Parameters
+    ----------
+    deepth : int
+      ゲーム木の深さ
+    pos_evaluation : OthelloPositionalEvaluation
+      局面評価関数
+    """
+    self.deepth = deepth
+    self.pos_evaluation = pos_evaluation
+
+  def __alpha_beta(self, othello: OthelloBitBoard, n: int, alpha: int, beta: int) -> tuple[int, int, int]:
+    """
+    α-β法を行うメソッド
+    """
+    candidate_list = othello.get_candidate()
+    ret_eval = 0
+    ret_x = ret_y = -1
+    for x, y in candidate_list:
+      next_game = deepcopy(othello)
+      if not next_game.reverse(x, y):
+        raise OthelloCannotReverse()
+      
+      next_state = next_game.get_next_state()
+      if next_state == 2 or n == 1:
+        eval = self.pos_evaluation.eval(next_game, True if self.root_player == othello.now_turn else False)
+      else:
+        if next_state == 0:
+          next_game.change_player()
+        eval, _, _ = self.__alpha_beta(next_game, n-1, alpha, beta)
+
+      if othello.now_turn == self.root_player and eval > alpha:
+        alpha = eval
+        ret_eval = eval
+        ret_x = x
+        ret_y = y
+      elif othello.now_turn != self.root_player and eval < beta:
+        beta = eval
+        ret_eval = eval
+        ret_x = x
+        ret_y = y
+      if alpha >= beta:
+        break
+    
+    return ret_eval, ret_x, ret_y
+
+
+  def step(self, othello: OthelloBitBoard) -> tuple[OthelloBitBoard, bool]:
+    self.root_player = othello.now_turn
+    _, x, y = self.__alpha_beta(othello, self.deepth, -inf, inf)
+
+    logger.debug('x: {}, y: {}'.format(x, y))
+    result = othello.reverse(x, y)
+    logger.debug(result)
+    return othello, result
+
 
 class OthelloQLearningAgent(OthelloAgent):
   """

@@ -1,12 +1,13 @@
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
+from positional_evaluation import OthelloPositionalEvaluationv2
 from othello import OthelloBitBoard
 from features import OthelloFeatures, OthelloFeaturesv1
-from self_made_error import ArgsError
+from self_made_error import ArgsError, OthelloCannotReverse
 import random
-from agent import OthelloAgent, OthelloRandomAgent
+from agent import OthelloAgent, OthelloRandomAgent, OthelloMinMaxAgent
 import json
 
-basicConfig(level=DEBUG)
+basicConfig(level=INFO)
 logger = getLogger(__name__)
 
 class QLearning:
@@ -70,7 +71,9 @@ class OthelloQL:
     while True:
       #print(othello.count)
       if agent_turn:
-        othello = self.agent.step(othello)
+        othello, result = self.agent.step(othello)
+        if not result:
+          raise OthelloCannotReverse()
       else:
         othello = self.__step(othello)
       next_state = othello.get_next_state()
@@ -92,7 +95,7 @@ class OthelloQL:
     else:
       raise ArgsError('result: {}'.format(result))
     
-    last_q = self.state.get_index(othello)
+    last_q = self.features.get_index(othello)
     self.__learn(reward, last_q)
 
   def __step_test(self, othello: OthelloBitBoard) -> OthelloBitBoard:
@@ -100,7 +103,7 @@ class OthelloQL:
     q_list = []
     tmp = []
     for x, y in candidate_list:
-      tmp.append([self.state.get_index(othello), x*8+y])
+      tmp.append([self.features.get_index(othello), x*8+y])
       q_list.append(self.ql.get(tmp[-1][0], tmp[-1][1]))
     
     q = max(q_list)
@@ -114,7 +117,9 @@ class OthelloQL:
     agent_turn = first_agent_turn
     while True:
       if agent_turn:
-        othello = self.agent.step(othello)
+        othello, result = self.agent.step(othello)
+        if not result:
+          raise OthelloCannotReverse()
       else:
         othello = self.__step_test(othello)
       next_state = othello.get_next_state()
@@ -146,16 +151,16 @@ def save_dict(path, dict: dict, use_json: bool = False) -> None:
 if __name__ == '__main__':
 
   epsilon = 0.3
-  ql = OthelloQL(OthelloFeaturesv1(), OthelloRandomAgent(), epsilon)
+  ql = OthelloQL(OthelloFeaturesv1(), OthelloMinMaxAgent(5, OthelloPositionalEvaluationv2()), epsilon)
 
 
   print('Learning')
-  for i in range(10000):
-    if (i+1)%2000 == 0:
+  for i in range(100):
+    if (i+1)%20 == 0:
       print('count: {}'.format(i))
       print('Test')
       win = lose = draw = 0
-      for i in range(500):
+      for i in range(20):
         result = ql.test()
         if result == 0:
           win += 1

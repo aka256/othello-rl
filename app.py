@@ -1,11 +1,12 @@
+from positional_evaluation import OthelloPositionalEvaluationv2
 import tkinter as tk
 import othello
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
 from typing import Union, Optional
-from agent import OthelloAgent, OthelloPlayerAgent, OthelloQLearningAgent, OthelloRandomAgent
+from agent import OthelloAgent, OthelloPlayerAgent, OthelloQLearningAgent, OthelloRandomAgent, OthelloMinMaxAgent
 from features import OthelloFeaturesv1
 
-basicConfig(level=DEBUG)
+basicConfig(level=INFO)
 logger = getLogger(__name__)
 
 class OthelloApp(tk.Frame):
@@ -74,7 +75,7 @@ class OthelloApp(tk.Frame):
     event : tk.Event or None, default None
       イベントのプロパティ
     """
-    self.othello_main.start_new_game(OthelloPlayerAgent(), OthelloQLearningAgent(OthelloFeaturesv1(), './save/test.json'))
+    self.othello_main.start_new_game(OthelloPlayerAgent(), OthelloMinMaxAgent(5, OthelloPositionalEvaluationv2()))
 
   def __on_undo(self, event: Optional[tk.Event] = None) -> None:
     """
@@ -167,12 +168,12 @@ class OthelloBoardGUI(tk.Canvas):
         if type(self.agent1) is OthelloPlayerAgent:
           self.enable_click_board = True
         else:
-          result = self.agent1.step(self.game)
+          self.game, result = self.agent1.step(self.game)
       else:
         if type(self.agent2) is OthelloPlayerAgent:
           self.enable_click_board = True
         else:
-          result = self.agent2.step(self.game)
+          self.game, result = self.agent2.step(self.game)
       
       if not self.enable_click_board and result:
         next = self.game.get_next_state()
@@ -213,9 +214,9 @@ class OthelloBoardGUI(tk.Canvas):
     
     if x != -1 and y != -1:
       if self.game.now_turn == 0:
-        result = self.agent1.step(self.game, x, y)
+        self.game, result = self.agent1.step(self.game, x, y)
       else:
-        result = self.agent2.step(self.game, x, y)
+        self.game, result = self.agent2.step(self.game, x, y)
       
       if result:
         next = self.game.get_next_state()

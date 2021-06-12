@@ -273,10 +273,11 @@ class OthelloBitBoard:
     if player_num != -1:
       legal_board = self.__make_legal_board(player_num)
     print(' 01234567')
+    n = 1
     for i in range(8):
       print(str(i), end='')
       for j in range(8):
-        n = 1 << (i*8+j)
+        #n = 1 << (i*8+j)
         if self.board[0] & n:
           print('●', end='')
         elif self.board[1] & n:
@@ -285,6 +286,7 @@ class OthelloBitBoard:
           print('□', end='')
         else:
           print(' ', end='')
+        n <<= 1
       print()
 
   def get_board_state(self, show_candidate: bool = False) -> list[list[int]]:
@@ -300,19 +302,29 @@ class OthelloBitBoard:
     -------
     board_state : list[list[int]]
       現在の盤の状態
+      - 0: blank
+      - 1: now_turn
+      - 2: opponent
+      - 3: candidate
+
+    Notes
+    -----
+    show_candidate = Falseであるならば、self.boardを用いた方が高速になる
     """
     if show_candidate:
       legal_board = self.__make_legal_board(self.now_turn)
       logger.debug('legal board: {}'.format(legal_board))
     retval = [[0]*8 for _ in range(8)]
+    idx = 1
     for i in range(8):
       for j in range(8):
-        if self.board[0] & 1 << (i*8+j):
+        if self.board[0] & idx:
           retval[i][j] = 1
-        elif self.board[1] & 1 << (i*8+j):
+        elif self.board[1] & idx:
           retval[i][j] = 2
-        elif show_candidate and legal_board & 1 << (i*8+j):
+        elif show_candidate and legal_board & idx:
           retval[i][j] = 3
+        idx <<= 1
     
     return retval
 
@@ -334,9 +346,11 @@ class OthelloBitBoard:
     """
     legal_board = self.__make_legal_board(self.now_turn)
     retval = []
+    idx = 1
     for i in range(64):
-      if 1 << i & legal_board:
+      if idx & legal_board:
         retval.append([i//8, i%8])
+      idx <<= 1
     
     return retval
 
@@ -357,12 +371,14 @@ class OthelloBitBoard:
       return -1
     
     a_count = b_count = 0
+    n = 1
     for i in range(64):
-      n = 1 << i
+      #n = 1 << i
       if n & self.board[0]:
         a_count += 1
       elif n & self.board[1]:
         b_count += 1
+      n <<= 1
     
     if a_count > b_count:
       return 0
