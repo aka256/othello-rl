@@ -2,7 +2,8 @@ import tkinter as tk
 import othello
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
 from typing import Union, Optional
-from agent import OthelloAgent
+from agent import OthelloAgent, OthelloPlayerAgent, OthelloQLearningAgent, OthelloRandomAgent
+from features import OthelloFeaturesv1
 
 basicConfig(level=DEBUG)
 logger = getLogger(__name__)
@@ -73,7 +74,7 @@ class OthelloApp(tk.Frame):
     event : tk.Event or None, default None
       イベントのプロパティ
     """
-    self.othello_main.start_new_game()
+    self.othello_main.start_new_game(OthelloPlayerAgent(), OthelloQLearningAgent(OthelloFeaturesv1(), './save/test.json'))
 
   def __on_undo(self, event: Optional[tk.Event] = None) -> None:
     """
@@ -102,9 +103,13 @@ class OthelloBoardGUI(tk.Canvas):
     候補マスの表示もこれによる
   game : othello.OthelloBitBoard
     OthelloBitBoardを管理する変数
+  agent1 : OthelloAgent
+    agent1
+  agent2 : OthelloAgent
+    agent2
   """
 
-  def __init__(self, parent: tk.Tk, agent: OthelloAgent, place_x: int, place_y: int, board_width: int) -> None:
+  def __init__(self, parent: tk.Tk, place_x: int, place_y: int, board_width: int) -> None:
     """
     コンストラクタ
 
@@ -120,7 +125,7 @@ class OthelloBoardGUI(tk.Canvas):
     self.board_width = board_width
     self.line_width = board_width//150
     self.frame_width = board_width//12
-    self.agent = agent
+    self.enable_click_board = False
 
     # メインとなるキャンバス
     super().__init__(parent, highlightthickness=0, background='green')
@@ -135,17 +140,56 @@ class OthelloBoardGUI(tk.Canvas):
       self.create_line((self.board_width-self.line_width)/8*i+self.line_width/2, 0, (self.board_width-self.line_width)/8*i+self.line_width/2, self.board_width, width=self.line_width, fill='black')
     
 
-  def start_new_game(self, first_player_num: int = 0) -> None:
+  def start_new_game(self, agent1: OthelloAgent, agent2: OthelloAgent, first_player_num: int = 0) -> None:
     """
     新しくゲームを始めるメソッド
 
     Parameters
     ----------
+    agent1 : OthelloAgent
+      agent1
+    agent2 : OthelloAgent
+      agent2
     first_player_num : int, dafault 0
       最初のプレイヤー
     """
+    self.agent1 = agent1
+    self.agent2 = agent2
+
     self.game = othello.OthelloBitBoard(first_player_num)
     self.__draw_othello_state(self.game)
+
+    self.__step()
+
+  def __step(self):
+    if hasattr(self, 'game'):
+      if self.game.now_turn == 0:
+        if type(self.agent1) is OthelloPlayerAgent:
+          self.enable_click_board = True
+        else:
+          result = self.agent1.step(self.game)
+      else:
+        if type(self.agent2) is OthelloPlayerAgent:
+          self.enable_click_board = True
+        else:
+          result = self.agent2.step(self.game)
+      
+      if not self.enable_click_board and result:
+        next = self.game.get_next_state()
+        logger.debug('Next State: {}'.format(next))
+        if next == 0:
+          self.game.change_player()
+        elif next == 1:
+          pass
+        else:
+          logger.debug('Fin')
+        self.__draw_othello_state(self.game)
+        if next == 0 or next == 1:
+          return self.__step()
+      elif not self.enable_click_board and not result:
+        pass
+    else:
+      pass
 
   def __click_board(self, event: tk.Event) -> None:
     """
@@ -156,6 +200,9 @@ class OthelloBoardGUI(tk.Canvas):
     event : tk.Event
       イベントのプロパティ
     """
+    if not self.enable_click_board:
+      return
+
     # クリックした位置を取得
     x = y = -1
     for i in range(8):
@@ -165,7 +212,12 @@ class OthelloBoardGUI(tk.Canvas):
         y = i
     
     if x != -1 and y != -1:
-      if self.game.reverse(x, y):
+      if self.game.now_turn == 0:
+        result = self.agent1.step(self.game, x, y)
+      else:
+        result = self.agent2.step(self.game, x, y)
+      
+      if result:
         next = self.game.get_next_state()
         logger.debug('Next State: {}'.format(next))
         if next == 0:
@@ -177,6 +229,9 @@ class OthelloBoardGUI(tk.Canvas):
         self.__draw_othello_state(self.game)
       else:
         pass
+    
+    self.enable_click_board = False
+    self.__step()
 
   def __get_frame_tag(self, x: int, y: int) -> str:
     """
