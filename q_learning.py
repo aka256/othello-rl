@@ -1,4 +1,5 @@
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
+from multiprocessing.context import Process
 from positional_evaluation import OthelloPositionalEvaluationv2
 from othello import OthelloBitBoard
 from features import OthelloFeatures, OthelloFeaturesv1
@@ -6,18 +7,18 @@ from self_made_error import ArgsError, OthelloCannotReverse
 import random
 from agent import OthelloAgent, OthelloRandomAgent, OthelloMinMaxAgent
 import json
+import time
+from multiprocessing import Manager, Process
 
-basicConfig(level=INFO)
+basicConfig(level=DEBUG)
 logger = getLogger(__name__)
 
 class QLearning:
-  def __init__(self, init_value: int, alpha: float, gamma: float) -> None:
+  def __init__(self, data: dict, init_value: int, alpha: float, gamma: float) -> None:
     self.alpha = alpha
     self.gamma = gamma
-    #self.epsilon = epsilon
 
-    self.data = {}
-    #self.state = state
+    self.data = data
     self.init_value = init_value
 
   def get(self, s: int, a: int) -> int:
@@ -32,8 +33,18 @@ class QLearning:
 
 
 class OthelloQL:
-  def __init__(self, features: OthelloFeatures, agent: OthelloAgent, epsilon: float) -> None:
-    self.ql = QLearning(0, 0.5, 0.5)
+  """
+
+  Attributes
+  ----------
+  ql : QLearning
+  features : OthelloFeatures
+  epsilon : int
+  agent : OthelloAgent
+  """
+
+  def __init__(self, features: OthelloFeatures, agent: OthelloAgent, data: dict, init_value: int, alpha: float, beta: float, epsilon: float) -> None:
+    self.ql = QLearning(data, init_value, alpha, beta)
     self.features = features
     self.epsilon = epsilon
     self.agent = agent
@@ -52,30 +63,27 @@ class OthelloQL:
       q = random.choice(q_list)
     idx = q_list.index(q)
     othello.reverse(candidate_list[idx][0], candidate_list[idx][1])
-    self.action_data.append([tmp[idx][0], tmp[idx][1], q_list[idx]])
 
-    return othello
+    return othello, [tmp[idx][0], tmp[idx][1], q_list[idx]]
 
-  def __learn(self, reward: int, last_q: float):
-    #print(len(self.action_data))
-    #print(self.action_data)
+  def __learn(self, reward: int, last_q: float, action_data: list):
     before_q = last_q
-    for s, a, q in self.action_data:
+    for s, a, q in action_data:
       self.ql.update(s, a, reward, before_q)
       before_q = q
 
   def action_one_game(self, first_agent_turn = True):
     othello = OthelloBitBoard()
     agent_turn = first_agent_turn
-    self.action_data = []
+    action_data = []
     while True:
-      #print(othello.count)
       if agent_turn:
         othello, result = self.agent.step(othello)
         if not result:
           raise OthelloCannotReverse()
       else:
-        othello = self.__step(othello)
+        othello, action = self.__step(othello)
+        action_data.append(action)
       next_state = othello.get_next_state()
       if next_state == 1:
         pass
@@ -94,9 +102,9 @@ class OthelloQL:
       reward = 0
     else:
       raise ArgsError('result: {}'.format(result))
-    
+    logger.debug('action_data: {}'.format(action_data))
     last_q = self.features.get_index(othello)
-    self.__learn(reward, last_q)
+    self.__learn(reward, last_q, action_data)
 
   def __step_test(self, othello: OthelloBitBoard) -> OthelloBitBoard:
     candidate_list = othello.get_candidate()
@@ -151,13 +159,29 @@ def save_dict(path, dict: dict, use_json: bool = False) -> None:
 if __name__ == '__main__':
 
   epsilon = 0.3
-  ql = OthelloQL(OthelloFeaturesv1(), OthelloMinMaxAgent(3, OthelloPositionalEvaluationv2()), epsilon)
-
-
+  startTime = time.time()
+  
+  with Manager() as manager:
+    shared_dict = manager.dict()
+    ql = OthelloQL(OthelloFeaturesv1(), OthelloMinMaxAgent(3, OthelloPositionalEvaluationv2()), shared_dict, 0, 0.5, 0.5, epsilon)
+    for _ in range(25):
+      p_list = []
+      for i in range(4):
+        p = Process(target=ql.action_one_game)
+        p.start()
+        p_list.append(p)
+      for p in p_list:
+        p.join()
+    
+    save_dict('test.json', ql.ql.data, True)
+  '''
+  tpe = ProcessPoolExecutor(max_workers=3)
+  startTime = time.time()
   print('Learning')
   for i in range(100):
-    if (i+1)%20 == 0:
-      print('count: {}'.format(i))
+    if (i+1)%100 == 0:
+      print('count: {}, time: {}'.format(i, time.time()-startTime))
+      
       print('Test')
       win = lose = draw = 0
       for i in range(20):
@@ -169,8 +193,15 @@ if __name__ == '__main__':
         else:
           draw += 1
       print('win: {}, lose: {}, draw: {}'.format(win, lose, draw))
-    ql.action_one_game()
+      
+    future = tpe.submit(ql.action_one_game)
+    print(future)
+    print(future.result())
+    
 
+  tpe.shutdown()
+  '''
+  print(time.time()-startTime)
   #print('Test')
   #win = lose = draw = 0
   #for i in range(200):
@@ -183,5 +214,5 @@ if __name__ == '__main__':
   #    draw += 1
   
   #print('win: {}, lose: {}, draw: {}'.format(win, lose, draw))
-
-  save_dict('test.json', ql.ql.data, True)
+  #print(ql.ql.data)
+  #save_dict('test.json', ql.ql.data, True)

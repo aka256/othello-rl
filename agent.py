@@ -5,7 +5,7 @@ import random
 from self_made_error import EmptyListError, ArgsError, OthelloCannotReverse
 from typing import Union, TypedDict
 from parse_save import parse_ql_json
-from copy import deepcopy, copy
+from copy import deepcopy
 from positional_evaluation import OthelloPositionalEvaluation
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
 
@@ -89,7 +89,6 @@ class OthelloRandomAgent(OthelloAgent):
       ゲームを進めることが出来たか否か
     """
     candidate_list = othello.get_candidate()
-    #print(candidate_list)
     if len(candidate_list) == 0:
       raise EmptyListError('candidate_list became empty')
     next = random.choice(candidate_list)
@@ -166,9 +165,7 @@ class OthelloMinMaxAgent(OthelloAgent):
     self.root_player = othello.now_turn
     _, x, y = self.__alpha_beta(othello, self.deepth, -inf, inf)
 
-    logger.debug('x: {}, y: {}'.format(x, y))
     result = othello.reverse(x, y)
-    logger.debug(result)
     return othello, result
 
 

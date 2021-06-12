@@ -75,7 +75,7 @@ class OthelloApp(tk.Frame):
     event : tk.Event or None, default None
       イベントのプロパティ
     """
-    self.othello_main.start_new_game(OthelloPlayerAgent(), OthelloMinMaxAgent(5, OthelloPositionalEvaluationv2()))
+    self.othello_main.start_new_game(OthelloQLearningAgent(OthelloFeaturesv1(), './save/test.json'), OthelloRandomAgent())
 
   def __on_undo(self, event: Optional[tk.Event] = None) -> None:
     """
