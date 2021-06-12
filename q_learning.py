@@ -151,7 +151,7 @@ def save_dict(path, dict: dict, use_json: bool = False) -> None:
 if __name__ == '__main__':
 
   epsilon = 0.3
-  ql = OthelloQL(OthelloFeaturesv1(), OthelloMinMaxAgent(5, OthelloPositionalEvaluationv2()), epsilon)
+  ql = OthelloQL(OthelloFeaturesv1(), OthelloMinMaxAgent(3, OthelloPositionalEvaluationv2()), epsilon)
 
 
   print('Learning')

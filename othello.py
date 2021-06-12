@@ -19,6 +19,8 @@ class OthelloBitBoard:
     手番の総数
   past_data: list
     過去の盤面をスタックしているリスト
+  legal_board_cache : list
+    leagal_boardのキャッシュ
 
   Notes
   -----
@@ -39,6 +41,7 @@ class OthelloBitBoard:
     self.now_turn = turn
     self.count = 0
     self.past_data = []
+    self.legal_board_cache = [{'count': -1, 'legal_board': -1}, {'count': -1, 'legal_board': -1}]
 
   def __make_legal_board(self, player_num: int) -> int:
     """
@@ -54,6 +57,9 @@ class OthelloBitBoard:
     legal_board : int
       合成手ボード
     """
+    if self.legal_board_cache[player_num]['count'] == self.count:
+      return self.legal_board_cache[player_num]['legal_board']
+
     horizontal_pivot = self.board[player_num-1] & 0x7e7e7e7e7e7e7e7e
     vertical_pivot = self.board[player_num-1] & 0x00ffffffffffff00
     all_pivot = self.board[player_num-1] & 0x007e7e7e7e7e7e00
@@ -100,6 +106,9 @@ class OthelloBitBoard:
     for i in range(5):
       tmp |= all_pivot & (tmp >> 7)
     retval |= blank & (tmp >> 7)
+
+    self.legal_board_cache[player_num]['count'] = self.count
+    self.legal_board_cache[player_num]['legal_board'] = retval
 
     return retval
 
