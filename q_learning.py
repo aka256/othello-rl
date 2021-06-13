@@ -50,7 +50,7 @@ class OthelloQL:
     self.epsilon = epsilon
     self.agent = agent
 
-  def __step(self, othello: OthelloBitBoard) -> OthelloBitBoard:
+  def __step(self, othello: OthelloBitBoard) -> tuple[int, int, float]:
     candidate_list = othello.get_candidate()
     q_list = []
     tmp = []
@@ -65,7 +65,7 @@ class OthelloQL:
     idx = q_list.index(q)
     othello.reverse(candidate_list[idx][0], candidate_list[idx][1])
 
-    return othello, [tmp[idx][0], tmp[idx][1], q_list[idx]]
+    return tmp[idx][0], tmp[idx][1], q_list[idx]
 
   def __learn(self, reward: int, last_q: float, action_data: list):
     before_q = last_q
@@ -79,11 +79,11 @@ class OthelloQL:
     action_data = []
     while True:
       if agent_turn:
-        othello, result = self.agent.step(othello)
+        result = self.agent.step(othello)
         if not result:
           raise OthelloCannotReverse()
       else:
-        othello, action = self.__step(othello)
+        action = self.__step(othello)
         action_data.append(action)
       next_state = othello.get_next_state()
       if next_state == 1:
@@ -107,7 +107,7 @@ class OthelloQL:
     last_q = self.features.get_index(othello)
     self.__learn(reward, last_q, action_data)
 
-  def __step_test(self, othello: OthelloBitBoard) -> OthelloBitBoard:
+  def __step_test(self, othello: OthelloBitBoard) -> None:
     candidate_list = othello.get_candidate()
     q_list = []
     tmp = []
@@ -119,18 +119,16 @@ class OthelloQL:
     idx = q_list.index(q)
     othello.reverse(candidate_list[idx][0], candidate_list[idx][1])
 
-    return othello
-
-  def test(self, first_agent_turn = True) -> OthelloBitBoard:
+  def test(self, first_agent_turn = True) -> int:
     othello = OthelloBitBoard()
     agent_turn = first_agent_turn
     while True:
       if agent_turn:
-        othello, result = self.agent.step(othello)
+        result = self.agent.step(othello)
         if not result:
           raise OthelloCannotReverse()
       else:
-        othello = self.__step_test(othello)
+        self.__step_test(othello)
       next_state = othello.get_next_state()
       if next_state == 1:
         pass

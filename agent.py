@@ -17,7 +17,7 @@ class OthelloAgent(metaclass=ABCMeta):
   オセロをプレイするagentの抽象クラス
   """
   @abstractmethod
-  def step(self, othello: OthelloBitBoard) -> tuple[OthelloBitBoard, bool]:
+  def step(self, othello: OthelloBitBoard) -> bool:
     """
     オセロを一手進めるメソッド
 
@@ -28,8 +28,6 @@ class OthelloAgent(metaclass=ABCMeta):
 
     Returns
     -------
-    othello : OthelloBitBoard
-      ゲームを一手進めた状態
     result : bool
       ゲームを進めることが出来たか否か
     """
@@ -43,7 +41,7 @@ class OthelloPlayerAgent(OthelloAgent):
   -----
   動作を共通化させるために作成
   """
-  def step(self, othello: OthelloBitBoard, x: int, y: int) -> tuple[OthelloBitBoard, bool]:
+  def step(self, othello: OthelloBitBoard, x: int, y: int) -> bool:
     """
     オセロを一手進めるメソッド
 
@@ -58,21 +56,16 @@ class OthelloPlayerAgent(OthelloAgent):
 
     Returns
     -------
-    othello : OthelloBitBoard
-      ゲームを一手進めた状態
     result : bool
       ゲームを進めることが出来たか否か
     """
-    if othello.reverse(x, y):
-      return othello, True
-    
-    return othello, False
+    return othello.reverse(x, y)
 
 class OthelloRandomAgent(OthelloAgent):
   """
   候補からランダムに次の手を選択するagent
   """
-  def step(self, othello: OthelloBitBoard) -> tuple[OthelloBitBoard, bool]:
+  def step(self, othello: OthelloBitBoard) -> bool:
     """
     オセロを一手進めるメソッド
 
@@ -83,8 +76,6 @@ class OthelloRandomAgent(OthelloAgent):
 
     Returns
     -------
-    othello : OthelloBitBoard
-      ゲームを一手進めた状態
     result : bool
       ゲームを進めることが出来たか否か
     """
@@ -94,9 +85,8 @@ class OthelloRandomAgent(OthelloAgent):
     next = random.choice(candidate_list)
     result = othello.reverse(next[0], next[1])
 
-    return othello, result
+    return result
 
-Node = TypedDict('Node', {'game': OthelloBitBoard, 'coordinate': int, 'nodes': list})
 
 class OthelloMinMaxAgent(OthelloAgent):
   """
@@ -161,12 +151,12 @@ class OthelloMinMaxAgent(OthelloAgent):
     return ret_eval, ret_x, ret_y
 
 
-  def step(self, othello: OthelloBitBoard) -> tuple[OthelloBitBoard, bool]:
+  def step(self, othello: OthelloBitBoard) -> bool:
     self.root_player = othello.now_turn
     _, x, y = self.__alpha_beta(othello, self.deepth, -inf, inf)
 
     result = othello.reverse(x, y)
-    return othello, result
+    return result
 
 
 class OthelloQLearningAgent(OthelloAgent):
@@ -221,7 +211,7 @@ class OthelloQLearningAgent(OthelloAgent):
     """
     return self.data.get((s, a), self.init_value)
 
-  def step(self, othello: OthelloBitBoard) -> tuple[OthelloBitBoard, bool]:
+  def step(self, othello: OthelloBitBoard) -> bool:
     """
     オセロを一手進めるメソッド
 
@@ -232,8 +222,6 @@ class OthelloQLearningAgent(OthelloAgent):
 
     Returns
     -------
-    othello : OthelloBitBoard
-      ゲームを一手進めた状態
     result : bool
       ゲームを進めることが出来たか否か
     """
@@ -248,4 +236,4 @@ class OthelloQLearningAgent(OthelloAgent):
     idx = q_list.index(q)
     result = othello.reverse(candidate_list[idx][0], candidate_list[idx][1])
 
-    return othello, result
+    return result

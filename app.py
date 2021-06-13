@@ -75,7 +75,7 @@ class OthelloApp(tk.Frame):
     event : tk.Event or None, default None
       イベントのプロパティ
     """
-    self.othello_main.start_new_game(OthelloQLearningAgent(OthelloFeaturesv1(), './save/test.json'), OthelloRandomAgent())
+    self.othello_main.start_new_game(OthelloMinMaxAgent(3, OthelloPositionalEvaluationv2()), OthelloPlayerAgent())
 
   def __on_undo(self, event: Optional[tk.Event] = None) -> None:
     """
@@ -168,12 +168,12 @@ class OthelloBoardGUI(tk.Canvas):
         if type(self.agent1) is OthelloPlayerAgent:
           self.enable_click_board = True
         else:
-          self.game, result = self.agent1.step(self.game)
+          result = self.agent1.step(self.game)
       else:
         if type(self.agent2) is OthelloPlayerAgent:
           self.enable_click_board = True
         else:
-          self.game, result = self.agent2.step(self.game)
+          result = self.agent2.step(self.game)
       
       if not self.enable_click_board and result:
         next = self.game.get_next_state()
@@ -214,9 +214,9 @@ class OthelloBoardGUI(tk.Canvas):
     
     if x != -1 and y != -1:
       if self.game.now_turn == 0:
-        self.game, result = self.agent1.step(self.game, x, y)
+        result = self.agent1.step(self.game, x, y)
       else:
-        self.game, result = self.agent2.step(self.game, x, y)
+        result = self.agent2.step(self.game, x, y)
       
       if result:
         next = self.game.get_next_state()
