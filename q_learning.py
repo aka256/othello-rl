@@ -8,9 +8,10 @@ import random
 from agent import OthelloAgent, OthelloRandomAgent, OthelloMinMaxAgent
 import json
 import time
-from multiprocessing import Manager, Process
+from multiprocessing import Manager, Process, Pool, pool
+import math
 
-basicConfig(level=DEBUG)
+basicConfig(level=INFO)
 logger = getLogger(__name__)
 
 class QLearning:
@@ -156,17 +157,17 @@ def save_dict(path, dict: dict, use_json: bool = False) -> None:
     else:
       f.write(str(dict))
 
-if __name__ == '__main__':
-
+def do_multiprocess(process_size: int, count: int):
   epsilon = 0.3
-  startTime = time.time()
-  
+
   with Manager() as manager:
     shared_dict = manager.dict()
     ql = OthelloQL(OthelloFeaturesv1(), OthelloMinMaxAgent(3, OthelloPositionalEvaluationv2()), shared_dict, 0, 0.5, 0.5, epsilon)
-    for _ in range(25):
+    for i in range(math.ceil(count/process_size)):
+      if i*process_size%100 == 0:
+        logger.info('count: {}, time: {}'.format(i*process_size, time.time()-startTime))
       p_list = []
-      for i in range(4):
+      for i in range(min(process_size, count-i*process_size)):
         p = Process(target=ql.action_one_game)
         p.start()
         p_list.append(p)
@@ -174,6 +175,25 @@ if __name__ == '__main__':
         p.join()
     
     save_dict('test.json', ql.ql.data, True)
+
+def do_pool(pool_size: int, count: int):
+  epsilon = 0.3
+
+  with Manager() as manager:
+    shared_dict = manager.dict()
+    ql = OthelloQL(OthelloFeaturesv1(), OthelloMinMaxAgent(3, OthelloPositionalEvaluationv2()), shared_dict, 0, 0.5, 0.5, epsilon)
+    with Pool(pool_size) as pool:  
+      #for i in range(count):
+      l =[True]*count
+      pool.map(ql.action_one_game, l)
+    
+    save_dict('test.json', ql.ql.data, True)
+
+if __name__ == '__main__':
+
+  startTime = time.time()
+  #do_multiprocess(6, 1000)
+  do_pool(6, 1000)
   '''
   tpe = ProcessPoolExecutor(max_workers=3)
   startTime = time.time()
