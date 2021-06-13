@@ -63,7 +63,7 @@ class OthelloQL:
     else:
       q = random.choice(q_list)
     idx = q_list.index(q)
-    othello.reverse(candidate_list[idx][0], candidate_list[idx][1])
+    othello.reverse(candidate_list[idx][0], candidate_list[idx][1], False)
 
     return tmp[idx][0], tmp[idx][1], q_list[idx]
 
@@ -117,7 +117,7 @@ class OthelloQL:
     
     q = max(q_list)
     idx = q_list.index(q)
-    othello.reverse(candidate_list[idx][0], candidate_list[idx][1])
+    othello.reverse(candidate_list[idx][0], candidate_list[idx][1], False)
 
   def test(self, first_agent_turn = True) -> int:
     othello = OthelloBitBoard()
@@ -179,7 +179,7 @@ def do_pool(pool_size: int, count: int):
 
   with Manager() as manager:
     shared_dict = manager.dict()
-    ql = OthelloQL(OthelloFeaturesv1(), OthelloMinMaxAgent(3, OthelloPositionalEvaluationv2()), shared_dict, 0, 0.5, 0.5, epsilon)
+    ql = OthelloQL(OthelloFeaturesv1(), OthelloMinMaxAgent(4, OthelloPositionalEvaluationv2()), shared_dict, 0, 0.5, 0.5, epsilon)
     with Pool(pool_size) as pool:  
       #for i in range(count):
       l =[True]*count

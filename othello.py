@@ -176,7 +176,7 @@ class OthelloBitBoard:
     
     raise ArgsError('k (= {}) is out of range'.format(k))
 
-  def reverse(self, x: int, y: int) -> bool:
+  def reverse(self, x: int, y: int, check_can_put: bool = True) -> bool:
     """
     指定された座標のコマを裏返すメソッド
 
@@ -186,13 +186,15 @@ class OthelloBitBoard:
       設置するコマのx座標
     y : int
       設置するコマのy座標
+    check_can_put : bool, default True
+      コマが置けるか確認するかどうか
 
     Returns
     -------
     is_reversed : bool
       コマを裏返すことに成功したか否か
     """
-    if not self.__can_put(x, y):
+    if check_can_put and not self.__can_put(x, y):
       return False
 
     self.past_data.append([copy(self.board), self.now_turn, self.count])

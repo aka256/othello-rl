@@ -83,7 +83,7 @@ class OthelloRandomAgent(OthelloAgent):
     if len(candidate_list) == 0:
       raise EmptyListError('candidate_list became empty')
     next = random.choice(candidate_list)
-    result = othello.reverse(next[0], next[1])
+    result = othello.reverse(next[0], next[1], False)
 
     return result
 
@@ -124,7 +124,7 @@ class OthelloMinMaxAgent(OthelloAgent):
     ret_x = ret_y = -1
     for x, y in candidate_list:
       next_game = deepcopy(othello)
-      if not next_game.reverse(x, y):
+      if not next_game.reverse(x, y, False):
         raise OthelloCannotReverse()
       
       next_state = next_game.get_next_state()
@@ -155,7 +155,7 @@ class OthelloMinMaxAgent(OthelloAgent):
     self.root_player = othello.now_turn
     _, x, y = self.__alpha_beta(othello, self.deepth, -inf, inf)
 
-    result = othello.reverse(x, y)
+    result = othello.reverse(x, y, False)
     return result
 
 
@@ -234,6 +234,6 @@ class OthelloQLearningAgent(OthelloAgent):
     
     q = max(q_list)
     idx = q_list.index(q)
-    result = othello.reverse(candidate_list[idx][0], candidate_list[idx][1])
+    result = othello.reverse(candidate_list[idx][0], candidate_list[idx][1], False)
 
     return result
