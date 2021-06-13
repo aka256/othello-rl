@@ -1,4 +1,5 @@
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
+from typing import Optional
 from copy import copy
 from self_made_error import ArgsError
 
@@ -17,8 +18,10 @@ class OthelloBitBoard:
     現在手番であるプレイヤー
   count : int
     手番の総数
-  past_data: list
+  past_data : list
     過去の盤面をスタックしているリスト
+  past_data_len : int
+    past_dataの長さの最大値
   legal_board_cache : list
     leagal_boardのキャッシュ
 
@@ -28,7 +31,7 @@ class OthelloBitBoard:
   https://qiita.com/sensuikan1973/items/459b3e11d91f3cb37e43
   """
 
-  def __init__(self, turn: int = 0) -> None:
+  def __init__(self, turn: int = 0, past_len: Optional[int] = None) -> None:
     """
     コンストラクタ
 
@@ -36,11 +39,17 @@ class OthelloBitBoard:
     ----------
     turn : int
       最初のプレイヤー
+    past_len : int or None
+      past_data_lenの長さ
     """
     self.board = [0x0000000810000000, 0x0000001008000000]
     self.now_turn = turn
     self.count = 0
     self.past_data = []
+    if past_len == None:
+      self.past_data_len = 100
+    else:
+      self.past_data_len = past_len
     self.legal_board_cache = [{'count': -1, 'legal_board': -1}, {'count': -1, 'legal_board': -1}]
 
   def __make_legal_board(self, player_num: int) -> int:
@@ -187,6 +196,9 @@ class OthelloBitBoard:
       return False
 
     self.past_data.append([copy(self.board), self.now_turn, self.count])
+    if len(self.past_data) > self.past_data_len:
+      self.past_data.pop(0)
+    
     put = 1 << (x*8+y)
     rev = 0
     for i in range(8):
