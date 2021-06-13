@@ -123,17 +123,17 @@ class OthelloMinMaxAgent(OthelloAgent):
     ret_eval = 0
     ret_x = ret_y = -1
     for x, y in candidate_list:
-      next_game = deepcopy(othello)
-      if not next_game.reverse(x, y, False):
+      if not othello.reverse(x, y, False):
         raise OthelloCannotReverse()
       
-      next_state = next_game.get_next_state()
+      next_state = othello.get_next_state()
       if next_state == 2 or n == 1:
-        eval = self.pos_evaluation.eval(next_game, True if self.root_player == othello.now_turn else False)
+        eval = self.pos_evaluation.eval(othello, True if self.root_player == othello.now_turn else False)
       else:
         if next_state == 0:
-          next_game.change_player()
-        eval, _, _ = self.__alpha_beta(next_game, n-1, alpha, beta)
+          othello.change_player()
+        eval, _, _ = self.__alpha_beta(othello, n-1, alpha, beta)
+      othello.undo()
 
       if othello.now_turn == self.root_player and eval > alpha:
         alpha = eval
