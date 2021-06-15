@@ -141,6 +141,9 @@ class OthelloBitBoard:
 
     return (1 << (8*x+y) & legal_board) == 1 << (8*x+y)
 
+  def can(self, x, y):
+    return self.__can_put(x, y)
+
   def __transfer(self, put: int, k: int) -> int:
     """
     コマを裏返す位置を返すメソッド
@@ -197,7 +200,7 @@ class OthelloBitBoard:
     if check_can_put and not self.__can_put(x, y):
       return False
 
-    self.past_data.append([copy(self.board), self.now_turn, self.count])
+    self.past_data.append([self.board[0], self.board[1], self.now_turn, self.count, x, y])
     if len(self.past_data) > self.past_data_len:
       self.past_data.pop(0)
     
@@ -295,6 +298,8 @@ class OthelloBitBoard:
     """
     if player_num != -1:
       legal_board = self.__make_legal_board(player_num)
+    else:
+      legal_board = 0
     print(' 01234567')
     n = 1
     for i in range(8):
@@ -336,7 +341,7 @@ class OthelloBitBoard:
     """
     if show_candidate:
       legal_board = self.__make_legal_board(self.now_turn)
-      logger.debug('legal board: {}'.format(legal_board))
+      #logger.debug('legal board: {}'.format(legal_board))
     retval = [[0]*8 for _ in range(8)]
     idx = 1
     for i in range(8):
@@ -356,7 +361,7 @@ class OthelloBitBoard:
     盤面を一つ前に戻す
     """
     if len(self.past_data) > 0:
-      self.board, self.now_turn, self.count = self.past_data.pop(-1)
+      self.board[0], self.board[1], self.now_turn, self.count, _, _ = self.past_data.pop(-1)
 
   def get_candidate(self) -> list[list[int]]:
     """

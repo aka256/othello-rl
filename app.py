@@ -6,7 +6,7 @@ from typing import Union, Optional
 from agent import OthelloAgent, OthelloPlayerAgent, OthelloQLearningAgent, OthelloRandomAgent, OthelloMinMaxAgent
 from features import OthelloFeaturesv1
 
-basicConfig(level=INFO)
+basicConfig(level=DEBUG)
 logger = getLogger(__name__)
 
 class OthelloApp(tk.Frame):
@@ -177,7 +177,7 @@ class OthelloBoardGUI(tk.Canvas):
       
       if not self.enable_click_board and result:
         next = self.game.get_next_state()
-        logger.debug('Next State: {}'.format(next))
+        #logger.debug('Next State: {}'.format(next))
         if next == 0:
           self.game.change_player()
         elif next == 1:
@@ -220,7 +220,7 @@ class OthelloBoardGUI(tk.Canvas):
       
       if result:
         next = self.game.get_next_state()
-        logger.debug('Next State: {}'.format(next))
+        #logger.debug('Next State: {}'.format(next))
         if next == 0:
           self.game.change_player()
         elif next == 1:

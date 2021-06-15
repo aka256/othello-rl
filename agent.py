@@ -1,11 +1,13 @@
 from abc import ABCMeta, abstractmethod
+import logging
+from tree import MinMaxNodeData, Node
 from othello import OthelloBitBoard
 from features import OthelloFeatures
 import random
 from self_made_error import EmptyListError, ArgsError, OthelloCannotReverse
 from typing import Union, TypedDict
 from parse_save import parse_ql_json
-from copy import deepcopy
+from copy import deepcopy, copy
 from positional_evaluation import OthelloPositionalEvaluation
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
 
@@ -87,6 +89,8 @@ class OthelloRandomAgent(OthelloAgent):
 
     return result
 
+#NodeData = TypedDict('NodeData', {'board_0': int, 'board_1': int, 'now_turn': int, 'count': int, 'x': int, 'y': int})
+#Node = TypedDict('Node', {'data': NodeData, 'next': list})
 
 class OthelloMinMaxAgent(OthelloAgent):
   """
@@ -100,6 +104,7 @@ class OthelloMinMaxAgent(OthelloAgent):
     局面評価関数
   root_player : int
     ゲーム木のrootのプレイヤー
+  tree : Node
   """
   def __init__(self, deepth: int, pos_evaluation: OthelloPositionalEvaluation) -> None:
     """
@@ -114,48 +119,127 @@ class OthelloMinMaxAgent(OthelloAgent):
     """
     self.deepth = deepth
     self.pos_evaluation = pos_evaluation
+    self.tree = None
 
-  def __alpha_beta(self, othello: OthelloBitBoard, n: int, alpha: int, beta: int) -> tuple[int, int, int]:
+  def __alpha_beta(self, othello: OthelloBitBoard, n: int, alpha: int, beta: int, node: Node) -> tuple[int, int, int]:
     """
     α-β法を行うメソッド
     """
     candidate_list = othello.get_candidate()
-    ret_eval = 0
-    ret_x = ret_y = -1
-    for x, y in candidate_list:
-      if not othello.reverse(x, y, False):
-        raise OthelloCannotReverse()
-      
-      next_state = othello.get_next_state()
-      if next_state == 2 or n == 1:
-        eval = self.pos_evaluation.eval(othello, True if self.root_player == othello.now_turn else False)
-      else:
-        if next_state == 0:
-          othello.change_player()
-        eval, _, _ = self.__alpha_beta(othello, n-1, alpha, beta)
-      othello.undo()
+    if len(node.next) == len(candidate_list):
+      ret_eval = 0
+      ret_x = ret_y = -1
 
-      if othello.now_turn == self.root_player and eval > alpha:
-        alpha = eval
-        ret_eval = eval
-        ret_x = x
-        ret_y = y
-      elif othello.now_turn != self.root_player and eval < beta:
-        beta = eval
-        ret_eval = eval
-        ret_x = x
-        ret_y = y
-      if alpha >= beta:
-        break
+      for next_node in node.next:
+        othello.past_data.append([othello.board[0], othello.board[1], othello.now_turn, othello.count, node.data['x'], node.data['y']])
+        othello.board[0] = next_node.data['board_0']
+        othello.board[1] = next_node.data['board_1']
+        othello.now_turn = next_node.data['now_turn']
+        othello.count = next_node.data['count']
+        x = next_node.data['x']
+        y = next_node.data['y']
+        if len(next_node.next) != 0:
+          eval, _, _ = self.__alpha_beta(othello, n-1, alpha, beta, next_node)
+        else:
+          next_state = othello.get_next_state()
+          if next_state == 2 or n == 1:
+            eval = self.pos_evaluation.eval(othello, True if self.root_player == othello.now_turn else False)
+          else:
+            if next_state == 0:
+              othello.change_player()
+            eval, _, _ = self.__alpha_beta(othello, n-1, alpha, beta, next_node)
+        othello.undo()
+
+        if othello.now_turn == self.root_player and eval > alpha:
+          alpha = eval
+          ret_eval = eval
+          ret_x = x
+          ret_y = y
+        elif othello.now_turn != self.root_player and eval < beta:
+          beta = eval
+          ret_eval = eval
+          ret_x = x
+          ret_y = y
+        if alpha >= beta:
+          break
+    else:
+      #candidate_list = othello.get_candidate()
+      ret_eval = 0
+      ret_x = ret_y = -1
+      for x, y in candidate_list:
+        othello.reverse(x, y, False)
+        next_node = Node(MinMaxNodeData(board_0=othello.board[0], board_1=othello.board[1], now_turn=othello.now_turn, count=othello.count, x=x, y=y))
+        node.next.append(next_node)
+        next_state = othello.get_next_state()
+        if next_state == 2 or n == 1:
+          eval = self.pos_evaluation.eval(othello, True if self.root_player == othello.now_turn else False)
+        else:
+          if next_state == 0:
+            othello.change_player()
+          eval, _, _ = self.__alpha_beta(othello, n-1, alpha, beta, next_node)
+        othello.undo()
+
+        if othello.now_turn == self.root_player and eval > alpha:
+          alpha = eval
+          ret_eval = eval
+          ret_x = x
+          ret_y = y
+        elif othello.now_turn != self.root_player and eval < beta:
+          beta = eval
+          ret_eval = eval
+          ret_x = x
+          ret_y = y
+        if alpha >= beta:
+          break
     
+    #print(othello.past_data)
+    #othello.print_board()
     return ret_eval, ret_x, ret_y
 
+  def __set_next_tree(self, x: int, y: int) -> bool:
+    for node in self.tree.next:
+      if x == node.data['x'] and y == node.data['y']:
+        self.tree = node
+        return True
+    return False
 
   def step(self, othello: OthelloBitBoard) -> bool:
     self.root_player = othello.now_turn
-    _, x, y = self.__alpha_beta(othello, self.deepth, -inf, inf)
+    #print('past_data: {}'.format(othello.past_data))
+    new_node_flg = True
+    if self.tree != None and self.deepth >= 3:
+      i = 1
+      while len(othello.past_data) >= i and othello.past_data[-i][2] != othello.now_turn:
+        i += 1
+      if len(othello.past_data) >= i:
+        i -= 1
+        #print('i: {}'.format(i))
+        while i > 0:
+          self.__set_next_tree(othello.past_data[-i][4], othello.past_data[-i][5])
+          i -= 1
+        new_node_flg = False
 
+    if new_node_flg:
+      self.tree = Node(MinMaxNodeData(board_0=othello.board[0], board_1=othello.board[1], now_turn=othello.now_turn, count=othello.count, x=-1, y=-1))
+    
+    #print('-init tree------------------------------------------------------------------------------------------')
+    #self.tree.print()
+    #l = copy(othello.past_data)
+    #othello.print_board()
+    _, x, y = self.__alpha_beta(othello, self.deepth, -inf, inf, self.tree)
+    #othello.print_board()
+    #if not othello.can(x,y):
+    #  print('error')
+    #  othello.print_board()
+    #  self.tree.print()
+    #print('x: {}, y: {}'.format(x, y))
+    #print('-complete tree--------------------------------------------------------------------------------------')
+    #self.tree.print()
+    #print('-append tree1---------------------------------------------------------------------------------------')
+    self.__set_next_tree(x, y)
+    #self.tree.print()
     result = othello.reverse(x, y, False)
+    #othello.print_board()
     return result
 
 

@@ -1,11 +1,12 @@
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
 from multiprocessing.context import Process
+from parse_save import parse_ql_json
 from positional_evaluation import OthelloPositionalEvaluationv2
 from othello import OthelloBitBoard
 from features import OthelloFeatures, OthelloFeaturesv1
 from self_made_error import ArgsError, OthelloCannotReverse
 import random
-from agent import OthelloAgent, OthelloRandomAgent, OthelloMinMaxAgent
+from agent import OthelloAgent, OthelloQLearningAgent, OthelloRandomAgent, OthelloMinMaxAgent
 import json
 import time
 from multiprocessing import Manager, Process, Pool, pool
@@ -103,7 +104,7 @@ class OthelloQL:
       reward = 0
     else:
       raise ArgsError('result: {}'.format(result))
-    logger.debug('action_data: {}'.format(action_data))
+    #logger.debug('action_data: {}'.format(action_data))
     last_q = self.features.get_index(othello)
     self.__learn(reward, last_q, action_data)
 
@@ -174,24 +175,47 @@ def do_multiprocess(process_size: int, count: int):
     
     save_dict('test.json', ql.ql.data, True)
 
-def do_pool(pool_size: int, count: int):
-  epsilon = 0.3
-
+def do_pool(pool_size: int, count: int, epsilon: int, init_value: int, alpha: int, beta: int, opponent_agent: OthelloAgent):
   with Manager() as manager:
     shared_dict = manager.dict()
-    ql = OthelloQL(OthelloFeaturesv1(), OthelloMinMaxAgent(4, OthelloPositionalEvaluationv2()), shared_dict, 0, 0.5, 0.5, epsilon)
+    ql = OthelloQL(OthelloFeaturesv1(), opponent_agent, shared_dict, init_value, alpha, beta, epsilon)
     with Pool(pool_size) as pool:  
-      #for i in range(count):
       l =[True]*count
       pool.map(ql.action_one_game, l)
     
     save_dict('test.json', ql.ql.data, True)
 
+def ql_test(features: OthelloFeatures, dic: dict, init_value: int, opponent_agent: OthelloAgent, count: int, ql_order: int = 0):
+  ql_agent = OthelloQLearningAgent(features, dic, init_value)
+  result_sum = [0, 0, 0]
+  for _ in range(count):
+    othello = OthelloBitBoard(ql_order)
+    while True:
+      if othello.now_turn == 0:
+        ql_agent.step(othello)
+      else:
+        opponent_agent.step(othello)
+      
+      next_state = othello.get_next_state()
+      if next_state == 0:
+        othello.change_player()
+      elif next_state == 1:
+        pass
+      else:
+        result = othello.result()
+        result_sum[result] += 1
+        break
+
+  
+  print('win: {}, lose: {}, draw: {}'.format(result_sum[0], result_sum[1], result_sum[2]))
+  
+
+
 if __name__ == '__main__':
 
   startTime = time.time()
   #do_multiprocess(6, 1000)
-  do_pool(6, 1000)
+  do_pool(2, 100)
   '''
   tpe = ProcessPoolExecutor(max_workers=3)
   startTime = time.time()
@@ -220,6 +244,7 @@ if __name__ == '__main__':
   tpe.shutdown()
   '''
   print(time.time()-startTime)
+  #ql_test(OthelloFeaturesv1(), parse_ql_json('./save/minmax-3-5000-multi6.json'), 0, OthelloMinMaxAgent(3, OthelloPositionalEvaluationv2()), 100, 1)
   #print('Test')
   #win = lose = draw = 0
   #for i in range(200):
