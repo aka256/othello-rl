@@ -1,5 +1,6 @@
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
 from multiprocessing.context import Process
+from reward import OthelloReward, OthelloRewardv1
 from parse_save import parse_ql_json
 from positional_evaluation import OthelloPositionalEvaluationv2
 from othello import OthelloBitBoard
@@ -9,11 +10,15 @@ import random
 from agent import OthelloAgent, OthelloQLearningAgent, OthelloRandomAgent, OthelloMinMaxAgent
 import json
 import time
-from multiprocessing import Manager, Process, Pool, pool
+from multiprocessing import Manager, Process, Pool
 import math
+import matplotlib.pyplot as plt
+from copy import copy
 
 basicConfig(level=INFO)
 logger = getLogger(__name__)
+
+data_table = {}
 
 class QLearning:
   def __init__(self, data: dict, init_value: int, alpha: float, gamma: float) -> None:
@@ -29,9 +34,22 @@ class QLearning:
   def __set(self, s: int, a: int, value: int) -> None:
     self.data[(s, a)] = value
 
-  def update(self, s: int, a: int, r: int, q: int) -> None:
-    new_q = (1-self.alpha)*self.get(s, a)+self.alpha*(r + self.gamma*q)
+  def update(self, s: int, a: int, r: int, q: int) -> int:
+    old_q = self.get(s, a)
+    new_q = (1-self.alpha)*old_q+self.alpha*(r + self.gamma*q)
+    #logger.debug('old q: {}, new q: {}, s: {}, a: {}, r: {}, q: {}'.format(self.get(s, a), new_q, s, a, r, q))
+    logger.debug('Q_new: {:.4f} <= Q_old: {:.4f} (Q_t+1: {:.4f}, reward: {:.4f})'.format(new_q, old_q, q, r))
+    # debug
+    d = data_table.get(s, {})
+    if len(d) == 0:
+      data_table[s] = {}
+    if len(data_table[s].get(a, {})) == 0:
+      data_table[s][a] = []
+    data_table[s][a].append('Q_new: '+str(new_q)+', Q_old: '+str(old_q)+', reward: '+str(r)+', Q_t+1: '+str(q))
+
     self.__set(s, a, new_q)
+
+    return new_q
 
 
 class OthelloQL:
@@ -45,9 +63,10 @@ class OthelloQL:
   agent : OthelloAgent
   """
 
-  def __init__(self, features: OthelloFeatures, agent: OthelloAgent, data: dict, init_value: int, alpha: float, beta: float, epsilon: float) -> None:
+  def __init__(self, features: OthelloFeatures, agent: OthelloAgent, data: dict, init_value: int, alpha: float, beta: float, epsilon: float, reward: OthelloReward) -> None:
     self.ql = QLearning(data, init_value, alpha, beta)
     self.features = features
+    self.reward = reward
     self.epsilon = epsilon
     self.agent = agent
 
@@ -68,45 +87,55 @@ class OthelloQL:
 
     return tmp[idx][0], tmp[idx][1], q_list[idx]
 
-  def __learn(self, reward: int, last_q: float, action_data: list):
+  def __learn(self, last_q: float, action_data: list):
     before_q = last_q
-    for s, a, q in action_data:
-      self.ql.update(s, a, reward, before_q)
-      before_q = q
+    logger.debug('----head---------------------------------------')
+    for s, a, q, reward in action_data[::-1]:
+      before_q = self.ql.update(s, a, reward, before_q)
 
-  def action_one_game(self, first_agent_turn = True):
-    othello = OthelloBitBoard()
-    agent_turn = first_agent_turn
+  def action_one_game(self, do_from_opponent = True):
+    othello = OthelloBitBoard(0)
+    opp_turn = do_from_opponent
     action_data = []
     while True:
-      if agent_turn:
+      if opp_turn:
         result = self.agent.step(othello)
         if not result:
           raise OthelloCannotReverse()
       else:
-        action = self.__step(othello)
+        action = list(self.__step(othello))
+        if do_from_opponent:
+          reward = self.reward.get(othello, 1)
+        else:
+          reward = self.reward.get(othello, 0)
+        #logger.debug('reward: {}'.format(reward))
+        action.append(reward)
         action_data.append(action)
+        
       next_state = othello.get_next_state()
       if next_state == 1:
         pass
       elif next_state == 2:
         break
       else:
-        agent_turn = not agent_turn
+        opp_turn = not opp_turn
         othello.change_player()
 
-    result = othello.result()
-    if result == 0:
-      reward = 1
-    elif result == 1:
-      reward = -1
-    elif result == 2:
-      reward = 0
+    if do_from_opponent:
+      reward = self.reward.get(othello, 1)
     else:
-      raise ArgsError('result: {}'.format(result))
+      reward = self.reward.get(othello, 0)
+    action_data[-1][-1] = reward
+    if reward > 0:
+      logger.info('win')
+    elif reward < 0:
+      logger.info('lose')
+    else:
+      logger.info('draw')
     #logger.debug('action_data: {}'.format(action_data))
-    last_q = self.features.get_index(othello)
-    self.__learn(reward, last_q, action_data)
+    #last_q = self.features.get_index(othello)
+    last_q = 0
+    self.__learn(last_q, action_data)
 
   def __step_test(self, othello: OthelloBitBoard) -> None:
     candidate_list = othello.get_candidate()
@@ -175,17 +204,19 @@ def do_multiprocess(process_size: int, count: int):
     
     save_dict('test.json', ql.ql.data, True)
 
-def do_pool(pool_size: int, count: int, epsilon: int, init_value: int, alpha: int, beta: int, opponent_agent: OthelloAgent):
+def do_pool(pool_size: int, count: int, epsilon: int, init_value: int, alpha: int, beta: int, opponent_agent: OthelloAgent, save_dir: str, save_path: str, save_regularly: bool, save_interval: int):
   with Manager() as manager:
     shared_dict = manager.dict()
-    ql = OthelloQL(OthelloFeaturesv1(), opponent_agent, shared_dict, init_value, alpha, beta, epsilon)
-    with Pool(pool_size) as pool:  
-      l =[True]*count
-      pool.map(ql.action_one_game, l)
+    ql = OthelloQL(OthelloFeaturesv1(), opponent_agent, shared_dict, init_value, alpha, beta, epsilon, OthelloRewardv1())
+    for i in range(save_interval):
+      with Pool(pool_size) as pool:  
+        l =[True, False]*(count//save_interval//2)
+        pool.map(ql.action_one_game, l)
+      logger.info('count: {}'.format(count//save_interval*i))
     
-    save_dict('test.json', ql.ql.data, True)
+      save_dict(save_dir+str(i)+save_path, ql.ql.data, True)
 
-def ql_test(features: OthelloFeatures, dic: dict, init_value: int, opponent_agent: OthelloAgent, count: int, ql_order: int = 0):
+def ql_test(features: OthelloFeatures, dic: dict, init_value: int, opponent_agent: OthelloAgent, count: int, ql_order: int = 1):
   ql_agent = OthelloQLearningAgent(features, dic, init_value)
   result_sum = [0, 0, 0]
   for _ in range(count):
@@ -206,56 +237,39 @@ def ql_test(features: OthelloFeatures, dic: dict, init_value: int, opponent_agen
         result_sum[result] += 1
         break
 
+  return result_sum
+  #print('win: {}, lose: {}, draw: {}'.format(result_sum[0], result_sum[1], result_sum[2]))
   
-  print('win: {}, lose: {}, draw: {}'.format(result_sum[0], result_sum[1], result_sum[2]))
+def test_graph(file_name: str, features: OthelloFeatures, init_value: int, dir: str, path: str, dict_num: int, opponent_agent: OthelloAgent, count: int, ql_order: int = 1):
+  result = []
+  for i in range(dict_num):
+    dic = parse_ql_json('./save'+dir+str(i)+path,1)
+    result.append(ql_test(features, dic, init_value, opponent_agent, count, ql_order))
+    print('win: {}, lose: {}, draw: {}'.format(*(result[-1])))
   
+  fig, ax = plt.subplots()
+  label = ['win', 'lose', 'draw']
+  offset = [0]*len(result)
+  for i in range(3):
+    ax.bar(list(range(len(result))), [x[i] for x in result], bottom=offset)
+    offset = [o+r[i] for o, r in zip(offset, result)]
+  ax.legend(label)
+  fig.savefig('./save'+dir+file_name+'.png')
 
+def do_ql_for_debug():
+  ql = OthelloQL(OthelloFeaturesv1(), OthelloMinMaxAgent(3, OthelloPositionalEvaluationv2()), {}, 0, 0.5, 0.5, 0.3, OthelloRewardv1())
+  for i in range(100):
+    ql.action_one_game()
+
+  with open('test.json', 'w') as f:
+    json.dump(data_table, f)
 
 if __name__ == '__main__':
 
   startTime = time.time()
   #do_multiprocess(6, 1000)
-  do_pool(2, 100)
-  '''
-  tpe = ProcessPoolExecutor(max_workers=3)
-  startTime = time.time()
-  print('Learning')
-  for i in range(100):
-    if (i+1)%100 == 0:
-      print('count: {}, time: {}'.format(i, time.time()-startTime))
-      
-      print('Test')
-      win = lose = draw = 0
-      for i in range(20):
-        result = ql.test()
-        if result == 0:
-          win += 1
-        elif result == 1:
-          lose += 1
-        else:
-          draw += 1
-      print('win: {}, lose: {}, draw: {}'.format(win, lose, draw))
-      
-    future = tpe.submit(ql.action_one_game)
-    print(future)
-    print(future.result())
-    
+  #do_pool(6, 5000, 0.3, 0, 0.5, 0.5, OthelloMinMaxAgent(3, OthelloPositionalEvaluationv2()), 'serial10/', 'test.json', True, 50)
 
-  tpe.shutdown()
-  '''
   print(time.time()-startTime)
-  #ql_test(OthelloFeaturesv1(), parse_ql_json('./save/minmax-3-5000-multi6.json'), 0, OthelloMinMaxAgent(3, OthelloPositionalEvaluationv2()), 100, 1)
-  #print('Test')
-  #win = lose = draw = 0
-  #for i in range(200):
-  #  result = ql.test()
-  #  if result == 0:
-  #    win += 1
-  #  elif result == 1:
-  #    lose += 1
-  #  else:
-  #    draw += 1
-  
-  #print('win: {}, lose: {}, draw: {}'.format(win, lose, draw))
-  #print(ql.ql.data)
-  #save_dict('test.json', ql.ql.data, True)
+  do_ql_for_debug()
+  #test_graph('vsRandom', OthelloFeaturesv1(), 0, '/serial10/', 'test.json', 50, OthelloRandomAgent(), 1000)

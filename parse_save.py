@@ -1,5 +1,4 @@
 import json
-from os import name
 import re
 import nbt.nbt
 import collections

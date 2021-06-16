@@ -382,6 +382,16 @@ class OthelloBitBoard:
     
     return retval
 
+  def get_piece_num(self, player_num: int) -> int:
+    i = 1
+    retval = 0
+    while i<=self.board[player_num]:
+      if self.board[player_num] & i:
+        retval += 1
+      i <<= 1
+
+    return retval
+
   def result(self) -> int:
     """
     ゲームの結果を返すメソッド
@@ -398,21 +408,77 @@ class OthelloBitBoard:
     if not self.is_finished():
       return -1
     
-    a_count = b_count = 0
-    n = 1
-    for i in range(64):
-      #n = 1 << i
-      if n & self.board[0]:
-        a_count += 1
-      elif n & self.board[1]:
-        b_count += 1
-      n <<= 1
+    a_count = self.get_piece_num(0)
+    b_count = self.get_piece_num(1)
     
     if a_count > b_count:
       return 0
     if a_count < b_count:  
       return 1
     return 2
+
+  def get_determine_piece_line(self, player_num: int) -> int:
+    retval = 0
+    i = 0x00_00_00_00_00_00_00_01
+    count = 0
+    while self.board[player_num] & i:
+      i <<= 8
+      count += 1
+    retval += count
+    if i != 0x01_00_00_00_00_00_00_00_00 and self.board[player_num] & 0x01_00_00_00_00_00_00_00:
+      i = 0x00_01_00_00_00_00_00_00
+      count = 0
+      while self.board[player_num] & i:
+        i >>= 8
+        count += 1
+      retval += count
+      
+    i = 0x01_00_00_00_00_00_00_00
+    count = 0
+    while self.board[player_num] & i:
+      i <<= 1
+      count += 1
+    retval += count
+    if i != 0x01_00_00_00_00_00_00_00_00_00 and self.board[player_num] & 0x80_00_00_00_00_00_00_00:
+      i = 0x40_00_00_00_00_00_00_00
+      count = 0
+      while self.board[player_num] & i:
+        i >>= 1
+        count += 1
+      retval += count
+
+    i = 0x80_00_00_00_00_00_00_00
+    count = 0
+    while self.board[player_num] & i:
+      i >>= 8
+      count += 1
+    retval += count
+    if i != 0x00_00_00_00_00_00_00_00_00 and self.board[player_num] & 0x00_00_00_00_00_00_00_80:
+      i = 0x00_00_00_00_00_00_80_00
+      count = 0
+      while self.board[player_num] & i:
+        i <<= 8
+        count += 1
+      retval += count
+    
+    i = 0x00_00_00_00_00_00_00_80
+    count = 0
+    while self.board[player_num] & i:
+      i >>= 1
+      count += 1
+    retval += count
+    if i != 0x00_00_00_00_00_00_00_00 and self.board[player_num] & 0x00_00_00_00_00_00_00_01:
+      i = 0x00_00_00_00_00_00_00_02
+      count = 0
+      while self.board[player_num] & i:
+        i <<= 1
+        count += 1
+      retval += count
+
+    return retval
+
+  def get_determine_piece(self, player_num: int) -> int:
+    pass
 
 
 def do_othello(first_player_num):
