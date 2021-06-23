@@ -1,4 +1,4 @@
-from positional_evaluation import OthelloPositionalEvaluationv2
+from positional_evaluation import OthelloPositionalEvaluationv2, OthelloPositionalEvaluationv1
 import tkinter as tk
 import othello
 from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
@@ -75,7 +75,7 @@ class OthelloApp(tk.Frame):
     event : tk.Event or None, default None
       イベントのプロパティ
     """
-    self.othello_main.start_new_game(OthelloMinMaxAgent(3, OthelloPositionalEvaluationv2()), OthelloQLearningAgent(OthelloFeaturesv1(), './save/serial4/49test.json'))
+    self.othello_main.start_new_game(OthelloPlayerAgent(), OthelloMinMaxAgent(3, OthelloPositionalEvaluationv1()))
 
   def __on_undo(self, event: Optional[tk.Event] = None) -> None:
     """
