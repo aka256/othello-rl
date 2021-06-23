@@ -1,5 +1,4 @@
 from abc import ABCMeta, abstractmethod
-from positional_evaluation import OthelloPositionalEvaluationv1
 from othello_board import OthelloBoard
 
 class OthelloPositionalEvaluation(metaclass=ABCMeta):

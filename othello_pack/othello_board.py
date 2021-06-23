@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from othello_pack.bit_opperation import flip_horizontal_bm4, flip_vertical_bm4, flip_diagonal_bm4, flip_anti_diagonal_bm4
 from typing import TypedDict
-from self_made_error import ArgsError
 from bit_opperation import pop_count
 
 class OthelloData(TypedDict):
@@ -60,10 +59,7 @@ class OthelloBoard(metaclass=ABCMeta):
   transfer_coff: list[int]
 
   @abstractmethod
-  def __init__(self, first_player_num: int = 0) -> None:
-    if first_player_num != 0 and first_player_num != 1:
-      ArgsError('first_player must be 0 or 1.')
-    
+  def __init__(self, first_player_num: int = 0) -> None:    
     self.now_turn = first_player_num
     self.count = 0
     self.past_data = []

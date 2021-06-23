@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from self_made_error import ArgsError
+from error import ArgsError
 from othello_pack.othello_board import OthelloBoard4x4, OthelloBoard8x8
 from othello_pack.bit_opperation import pop_count
 from othello_board import OthelloBoard
