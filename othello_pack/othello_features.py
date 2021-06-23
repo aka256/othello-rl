@@ -71,3 +71,18 @@ class Featuresv1(Features):
     retval = a_corner + (b_corner << 3) + (diff << 6) + (blank << 14)
 
     return retval
+
+
+class Featuresv2(Features):
+  """
+  盤面から特徴量?を取得するためのクラス
+
+  Notes
+  -----
+  特徴量といってもある盤面に対して1対1対応となっている
+  8x8での仕様には注意
+  """
+  def get_index(self, othello: OthelloBoard) -> int:
+    retval = othello.board[0] | othello.board[1] << othello.board_width**2
+
+    return retval
