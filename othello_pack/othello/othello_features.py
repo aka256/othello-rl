@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from error import ArgsError
-from bit_opperation import pop_count
+from ..bit_opperation import pop_count
 from othello_board import OthelloBoard, OthelloBoard4x4, OthelloBoard8x8
 
 class Features(metaclass=ABCMeta):
