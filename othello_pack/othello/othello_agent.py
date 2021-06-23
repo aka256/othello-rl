@@ -1,31 +1,26 @@
 from abc import ABCMeta, abstractmethod
-import logging
-from tree import MinMaxNodeData, Node
-from othello import OthelloBitBoard
-from features import OthelloFeatures
 import random
-from self_made_error import EmptyListError, ArgsError, OthelloCannotReverse
-from typing import Union, TypedDict
-from parse_save import parse_ql_json
-from copy import deepcopy, copy
-from positional_evaluation import OthelloPositionalEvaluation
-from logging import basicConfig, getLogger, DEBUG, ERROR, INFO
+from logging import getLogger
+from ..tree import Node
+from othello_board import OthelloBoard, OthelloData
+from othello_features import Features
+from othello_positional_evaluation import PositionalEvaluation
 
 logger = getLogger(__name__)
 inf = float('inf')
 
-class OthelloAgent(metaclass=ABCMeta):
+class Agent(metaclass=ABCMeta):
   """
   オセロをプレイするagentの抽象クラス
   """
   @abstractmethod
-  def step(self, othello: OthelloBitBoard) -> bool:
+  def step(self, othello: OthelloBoard) -> bool:
     """
     オセロを一手進めるメソッド
 
     Parameters
     ----------
-    othello : OthelloBitBoard
+    othello : OthelloBoard
       ゲームの現在の状況
 
     Returns
@@ -35,7 +30,7 @@ class OthelloAgent(metaclass=ABCMeta):
     """
     pass
 
-class OthelloPlayerAgent(OthelloAgent):
+class PlayerAgent(Agent):
   """
   プレイヤーによるagent
 
@@ -43,13 +38,13 @@ class OthelloPlayerAgent(OthelloAgent):
   -----
   動作を共通化させるために作成
   """
-  def step(self, othello: OthelloBitBoard, x: int, y: int) -> bool:
+  def step(self, othello: OthelloBoard, x: int, y: int) -> bool:
     """
     オセロを一手進めるメソッド
 
     Parameters
     ----------
-    othello : OthelloBitBoard
+    othello : OthelloBoard
       ゲームの現在の状況
     x : int
       コマを設置するx座標
@@ -63,11 +58,11 @@ class OthelloPlayerAgent(OthelloAgent):
     """
     return othello.reverse(x, y)
 
-class OthelloRandomAgent(OthelloAgent):
+class RandomAgent(Agent):
   """
   候補からランダムに次の手を選択するagent
   """
-  def step(self, othello: OthelloBitBoard) -> bool:
+  def step(self, othello: OthelloBoard) -> bool:
     """
     オセロを一手進めるメソッド
 
@@ -81,18 +76,14 @@ class OthelloRandomAgent(OthelloAgent):
     result : bool
       ゲームを進めることが出来たか否か
     """
-    candidate_list = othello.get_candidate()
-    if len(candidate_list) == 0:
-      raise EmptyListError('candidate_list became empty')
+    candidate_list = othello.get_candidate_list()
     next = random.choice(candidate_list)
     result = othello.reverse(next[0], next[1], False)
 
     return result
 
-#NodeData = TypedDict('NodeData', {'board_0': int, 'board_1': int, 'now_turn': int, 'count': int, 'x': int, 'y': int})
-#Node = TypedDict('Node', {'data': NodeData, 'next': list})
 
-class OthelloMinMaxAgent(OthelloAgent):
+class MinMaxAgent(Agent):
   """
   MinMax手法を利用したagent
 
@@ -100,13 +91,13 @@ class OthelloMinMaxAgent(OthelloAgent):
   ----------
   deepth : int
     ゲーム木の深さ
-  pos_evaluation : OthelloPositionalEvaluation
+  pos_evaluation : PositionalEvaluation
     局面評価関数
   root_player : int
     ゲーム木のrootのプレイヤー
   tree : Node
   """
-  def __init__(self, deepth: int, pos_evaluation: OthelloPositionalEvaluation) -> None:
+  def __init__(self, deepth: int, pos_evaluation: PositionalEvaluation) -> None:
     """
     コンストラクタ
 
@@ -114,18 +105,18 @@ class OthelloMinMaxAgent(OthelloAgent):
     ----------
     deepth : int
       ゲーム木の深さ
-    pos_evaluation : OthelloPositionalEvaluation
+    pos_evaluation : PositionalEvaluation
       局面評価関数
     """
     self.deepth = deepth
     self.pos_evaluation = pos_evaluation
     self.tree = None
 
-  def __alpha_beta(self, othello: OthelloBitBoard, n: int, alpha: int, beta: int, node: Node) -> tuple[int, int, int]:
+  def __alpha_beta(self, othello: OthelloBoard, n: int, alpha: int, beta: int, node: Node) -> tuple[int, int, int]:
     """
     α-β法を行うメソッド
     """
-    candidate_list = othello.get_candidate()
+    candidate_list = othello.get_candidate_list()
     if len(node.next) == len(candidate_list):
       ret_eval = 0
       ret_x = ret_y = -1
@@ -163,12 +154,11 @@ class OthelloMinMaxAgent(OthelloAgent):
         if alpha >= beta:
           break
     else:
-      #candidate_list = othello.get_candidate()
       ret_eval = 0
       ret_x = ret_y = -1
       for x, y in candidate_list:
         othello.reverse(x, y, False)
-        next_node = Node(MinMaxNodeData(board_0=othello.board[0], board_1=othello.board[1], now_turn=othello.now_turn, count=othello.count, x=x, y=y))
+        next_node = Node(OthelloData(board_0=othello.board[0], board_1=othello.board[1], now_turn=othello.now_turn, count=othello.count, x=x, y=y))
         node.next.append(next_node)
         next_state = othello.get_next_state()
         if next_state == 2 or n == 1:
@@ -203,9 +193,8 @@ class OthelloMinMaxAgent(OthelloAgent):
         return True
     return False
 
-  def step(self, othello: OthelloBitBoard) -> bool:
+  def step(self, othello: OthelloBoard) -> bool:
     self.root_player = othello.now_turn
-    #print('past_data: {}'.format(othello.past_data))
     new_node_flg = True
     if self.tree != None and self.deepth >= 3:
       i = 1
@@ -220,61 +209,44 @@ class OthelloMinMaxAgent(OthelloAgent):
         new_node_flg = False
 
     if new_node_flg:
-      self.tree = Node(MinMaxNodeData(board_0=othello.board[0], board_1=othello.board[1], now_turn=othello.now_turn, count=othello.count, x=-1, y=-1))
+      self.tree = Node(OthelloData(board_0=othello.board[0], board_1=othello.board[1], now_turn=othello.now_turn, count=othello.count, x=-1, y=-1))
     
-    #print('-init tree------------------------------------------------------------------------------------------')
-    #self.tree.print()
-    #l = copy(othello.past_data)
-    #othello.print_board()
     _, x, y = self.__alpha_beta(othello, self.deepth, -inf, inf, self.tree)
-    #othello.print_board()
-    #if not othello.can(x,y):
-    #  print('error')
-    #  othello.print_board()
-    #  self.tree.print()
-    #print('x: {}, y: {}'.format(x, y))
-    #print('-complete tree--------------------------------------------------------------------------------------')
-    #self.tree.print()
-    #print('-append tree1---------------------------------------------------------------------------------------')
     self.__set_next_tree(x, y)
-    #self.tree.print()
     result = othello.reverse(x, y, False)
-    #othello.print_board()
+
     return result
 
 
-class OthelloQLearningAgent(OthelloAgent):
+class QLearningAgent(Agent):
   """
   Q Learningによる学習によって得られたデータによるagent
 
   Attributes
   ----------
+  features : Features
+    使用するオセロの特徴量
   data : dict
     Q Learningによって得られた結果
+  init_value : int
+    data内に値がない場合の初期値
   """
-  def __init__(self, features: OthelloFeatures, arg: Union[str, dict], init_value: float = 0.0) -> None:
+  def __init__(self, features: Features, data: dict, init_value: float = 0.0) -> None:
     """
     コンストラクタ
 
     Parameters
     ----------
-    features : OthelloFeatures
+    features : Features
       使用するオセロの特徴量
-    arg : str or dict
-      Q Learningによって得られた結果(dict)もしくはそれが保存されているファイルのパス(str)
+    data : dict
+      Q Learningによって得られた結果(dict)
     init_value : int
       data内に値がない場合の初期値
     """
     self.features = features
     self.init_value = init_value
-    if type(arg) is str:
-      self.data = parse_ql_json(arg)
-
-    elif type(arg) is dict:
-      self.data = arg
-
-    else:
-      raise ArgsError('The arg must be str or dict')
+    self.data = data
 
   def __get(self, s: int, a: int) -> float:
     """
@@ -295,13 +267,13 @@ class OthelloQLearningAgent(OthelloAgent):
     """
     return self.data.get((s, a), self.init_value)
 
-  def step(self, othello: OthelloBitBoard) -> bool:
+  def step(self, othello: OthelloBoard) -> bool:
     """
     オセロを一手進めるメソッド
 
     Parameters
     ----------
-    othello : OthelloBitBoard
+    othello : OthelloBoard
       ゲームの現在の状況
 
     Returns
@@ -309,7 +281,7 @@ class OthelloQLearningAgent(OthelloAgent):
     result : bool
       ゲームを進めることが出来たか否か
     """
-    candidate_list = othello.get_candidate()
+    candidate_list = othello.get_candidate_list()
     q_list = []
     tmp = []
     for x, y in candidate_list:

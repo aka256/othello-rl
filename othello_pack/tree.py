@@ -7,14 +7,6 @@ class NodeData(TypedDict):
 class NumData(NodeData):
   num: int
 
-class MinMaxNodeData(NodeData):
-  board_0: int
-  board_1: int
-  now_turn: int
-  count: int
-  x: int
-  y: int
-
 class Node:
   def __init__(self, data: NodeData, *next_node: Node) -> None:
     self.data = data

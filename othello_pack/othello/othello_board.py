@@ -1,8 +1,8 @@
 from abc import ABCMeta, abstractmethod
-from typing import TypedDict
 from ..bit_opperation import pop_count, flip_horizontal_bm4, flip_vertical_bm4, flip_diagonal_bm4, flip_anti_diagonal_bm4
+from ..tree import NodeData
 
-class OthelloData(TypedDict):
+class OthelloData(NodeData):
   """
   ある時間でのオセロの盤面データ
 
