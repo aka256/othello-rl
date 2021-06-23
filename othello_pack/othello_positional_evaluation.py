@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
-from othello_board import OthelloBoard
+from othello_board import OthelloBoard, OthelloBoard4x4, OthelloBoard8x8
 
-class OthelloPositionalEvaluation(metaclass=ABCMeta):
+class PositionalEvaluation(metaclass=ABCMeta):
   """
   局面評価クラスの抽象クラス
   """
@@ -24,7 +24,7 @@ class OthelloPositionalEvaluation(metaclass=ABCMeta):
     """
     pass
 
-class OthelloPositionalEvaluation8x8v1(OthelloPositionalEvaluation):
+class PositionalEvaluation8x8v1(PositionalEvaluation):
   """
   局面評価v1
 
@@ -46,7 +46,7 @@ class OthelloPositionalEvaluation8x8v1(OthelloPositionalEvaluation):
             [20, -5, 15, 3, 3, 15, -5, 20],
             [-20, -40, -5, -5, -5, -5, -40, -20],
             [120, -20, 20, 5, 5, 20, -20, 120]]
-  def eval(self, othello: OthelloBoard, reverse_eval: bool = False) -> int:
+  def eval(self, othello: OthelloBoard8x8, reverse_eval: bool = False) -> int:
     """
     局面評価
 
@@ -78,7 +78,7 @@ class OthelloPositionalEvaluation8x8v1(OthelloPositionalEvaluation):
     return retval
 
 
-class OthelloPositionalEvaluation8x8v2(OthelloPositionalEvaluation):
+class PositionalEvaluation8x8v2(PositionalEvaluation):
   """
   局面評価v2
 
@@ -100,7 +100,7 @@ class OthelloPositionalEvaluation8x8v2(OthelloPositionalEvaluation):
             [0, -3, 0, -1, -1, 0, -3, 0],
             [-12, -15, -3, -3, -3, -3, -15, -12],
             [30, -12, 0, -1, -1, 0, -12, 30]]
-  def eval(self, othello: OthelloBoard, reverse_eval: bool = False) -> int:
+  def eval(self, othello: OthelloBoard8x8, reverse_eval: bool = False) -> int:
     """
     局面評価
     
@@ -131,13 +131,13 @@ class OthelloPositionalEvaluation8x8v2(OthelloPositionalEvaluation):
 
     return retval
 
-class OthelloPositionalEvaluation4x4v1(OthelloPositionalEvaluation):
+class PositionalEvaluation4x4v1(PositionalEvaluation):
   weight = [
     [10, -10, -10, 10],
     [-10, 0, 0, -10],
     [-10, 0, 0, -10],
     [10, -10, -10, 10]]
-  def eval(self, othello: OthelloBoard, reverse_eval: bool = False) -> int:
+  def eval(self, othello: OthelloBoard4x4, reverse_eval: bool = False) -> int:
     retval = 0
     idx = 1
     for i in range(4):

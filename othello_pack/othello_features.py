@@ -1,10 +1,9 @@
 from abc import ABCMeta, abstractmethod
 from error import ArgsError
-from othello_pack.othello_board import OthelloBoard4x4, OthelloBoard8x8
-from othello_pack.bit_opperation import pop_count
-from othello_board import OthelloBoard
+from bit_opperation import pop_count
+from othello_board import OthelloBoard, OthelloBoard4x4, OthelloBoard8x8
 
-class OthelloFeatures(metaclass=ABCMeta):
+class Features(metaclass=ABCMeta):
   """
   盤面から特徴量を取得するための抽象クラス
   """
@@ -26,7 +25,7 @@ class OthelloFeatures(metaclass=ABCMeta):
     pass
 
 
-class OthelloFeaturesv1(OthelloFeatures):
+class Featuresv1(Features):
   """
   盤面から特徴量を取得するためのクラス
 

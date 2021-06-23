@@ -1,6 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from othello_pack.othello_board import OthelloBoard4x4, OthelloBoard8x8
-from othello_board import OthelloBoard
+from othello_board import OthelloBoard, OthelloBoard4x4, OthelloBoard8x8
 
 class Reward(metaclass=ABCMeta):
   @abstractmethod
