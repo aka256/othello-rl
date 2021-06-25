@@ -2,9 +2,9 @@ from abc import ABCMeta, abstractmethod
 import random
 from logging import getLogger
 from ..tree import Node
-from othello_board import OthelloBoard, OthelloData
-from othello_features import Features
-from othello_positional_evaluation import PositionalEvaluation
+from board import OthelloBoard, OthelloData
+from features import Features
+from positional_evaluation import PositionalEvaluation
 
 logger = getLogger(__name__)
 inf = float('inf')
