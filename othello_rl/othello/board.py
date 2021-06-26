@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
-from ..bit_opperation import pop_count, flip_horizontal_bm4, flip_vertical_bm4, flip_diagonal_bm4, flip_anti_diagonal_bm4
-from ..tree import NodeData
+from othello_rl.bit_opperation import pop_count, flip_horizontal_bm4, flip_vertical_bm4, flip_diagonal_bm4, flip_anti_diagonal_bm4
+from othello_rl.tree import NodeData
 
 class OthelloData(NodeData):
   """
@@ -153,7 +153,7 @@ class OthelloBoard(metaclass=ABCMeta):
   
     return (put & legal_board) == put
 
-  def reverse(self, x: int, y: int, check_can_put: bool) -> bool:
+  def reverse(self, x: int, y: int, check_can_put: bool = True) -> bool:
     """
     指定された座標のコマを裏返すメソッド
 
@@ -413,6 +413,9 @@ class OthelloBoard4x4(OthelloBoard):
   """
   board_width = 4
   transfer_coff = [[4, 0xfff0], [3, 0x7770], [1, 0x7777], [5, 0x0777], [4, 0x0fff], [3, 0x0eee], [1, 0xeeee], [5, 0xeee0]]
+  horizontal_pivot_coff = 0x6666
+  vertical_pivot_coff = 0x0ff0
+  all_pivot_coff = 0x0660
   
   def __init__(self, first_player_num: int) -> None:
     super().__init__(first_player_num=first_player_num)
@@ -578,6 +581,9 @@ class OthelloBoard8x8(OthelloBoard):
   """
   board_width = 8
   transfer_coff = [[8, 0xffffffffffffff00], [7, 0x7f7f7f7f7f7f7f00], [1, 0x7f7f7f7f7f7f7f7f], [9, 0x007f7f7f7f7f7f7f], [8, 0x00ffffffffffffff], [7, 0x00fefefefefefefe], [1, 0xfefefefefefefefe], [9, 0xfefefefefefefe00]]
+  horizontal_pivot_coff = 0x7e7e7e7e7e7e7e7e
+  vertical_pivot_coff = 0x00ffffffffffff00
+  all_pivot_coff = 0x007e7e7e7e7e7e00
   
   def __init__(self, first_player_num: int) -> None:
     super().__init__(first_player_num=first_player_num)

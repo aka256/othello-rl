@@ -1,10 +1,10 @@
-from othello.positional_evaluation import PositionalEvaluation8x8v2, PositionalEvaluation8x8v1
+from othello_rl.othello.positional_evaluation import PositionalEvaluation8x8v2, PositionalEvaluation8x8v1
 import tkinter as tk
 from logging import getLogger
 from typing import Union, Optional
-from othello.agent import Agent, PlayerAgent, QLearningAgent, RandomAgent, MinMaxAgent
-from othello.features import Featuresv1
-from othello.board import OthelloBoard, OthelloBoard4x4, OthelloBoard8x8
+from othello_rl.othello.agent import Agent, PlayerAgent, QLearningAgent, RandomAgent, MinMaxAgent
+from othello_rl.othello.features import Featuresv1
+from othello_rl.othello.board import OthelloBoard, OthelloBoard4x4, OthelloBoard8x8
 
 logger = getLogger(__name__)
 
@@ -219,6 +219,8 @@ class OthelloBoardGUI(tk.Canvas):
       if event.y-self.board_width/self.board_size/2*(2*i+1)-self.frame_width/2 <= y <= event.y-self.board_width/self.board_size/2*(2*i+1)+self.frame_width/2:
         y = i
     
+    logger.debug('x: {}, y: {}'.format(x, y))
+
     if x != -1 and y != -1:
       if self.game.now_turn == 0:
         result = self.agent1.step(self.game, x, y)

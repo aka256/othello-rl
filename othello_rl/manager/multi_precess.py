@@ -1,7 +1,7 @@
 from multiprocessing import Manager, Pool
 from logging import getLogger
 import time
-from othello import OthelloQLearningManager
+from othello_rl.manager.othello import OthelloQLearningManager
 
 logger = getLogger(__name__)
 

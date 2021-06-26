@@ -1,10 +1,10 @@
 from abc import ABCMeta, abstractmethod
 import random
 from logging import getLogger
-from ..tree import Node
-from board import OthelloBoard, OthelloData
-from features import Features
-from positional_evaluation import PositionalEvaluation
+from othello_rl.tree import Node
+from othello_rl.othello.board import OthelloBoard, OthelloData
+from othello_rl.othello.features import Features
+from othello_rl.othello.positional_evaluation import PositionalEvaluation
 
 logger = getLogger(__name__)
 inf = float('inf')
@@ -122,7 +122,7 @@ class MinMaxAgent(Agent):
       ret_x = ret_y = -1
 
       for next_node in node.next:
-        othello.past_data.append([othello.board[0], othello.board[1], othello.now_turn, othello.count, node.data['x'], node.data['y']])
+        othello.past_data.append(OthelloData(board_0=othello.board[0], board_1=othello.board[1], turn=othello.now_turn, count=othello.count, x=node.data['x'], y=node.data['y']))
         othello.board[0] = next_node.data['board_0']
         othello.board[1] = next_node.data['board_1']
         othello.now_turn = next_node.data['now_turn']
@@ -198,13 +198,13 @@ class MinMaxAgent(Agent):
     new_node_flg = True
     if self.tree != None and self.deepth >= 3:
       i = 1
-      while len(othello.past_data) >= i and othello.past_data[-i][2] != othello.now_turn:
+      while len(othello.past_data) >= i and othello.past_data[-i]['turn'] != othello.now_turn:
         i += 1
       if len(othello.past_data) >= i:
         i -= 1
         #print('i: {}'.format(i))
         while i > 0:
-          self.__set_next_tree(othello.past_data[-i][4], othello.past_data[-i][5])
+          self.__set_next_tree(othello.past_data[-i]['x'], othello.past_data[-i]['y'])
           i -= 1
         new_node_flg = False
 

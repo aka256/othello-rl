@@ -1,12 +1,12 @@
 import random
 import json
 from logging import getLogger
-from ..qlearning.qlearning import QLearning
-from ..error import CannotReverseError
-from ..othello.board import OthelloBoard
-from ..othello.features import Features
-from ..othello.agent import Agent
-from ..othello.reward import Reward
+from othello_rl.qlearning.qlearning import QLearning
+from othello_rl.error import CannotReverseError
+from othello_rl.othello.board import OthelloBoard
+from othello_rl.othello.features import Features
+from othello_rl.othello.agent import Agent
+from othello_rl.othello.reward import Reward
 
 logger = getLogger(__name__)
 
