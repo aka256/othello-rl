@@ -1,10 +1,15 @@
-from othello_rl.othello.positional_evaluation import PositionalEvaluation8x8v2, PositionalEvaluation8x8v1
+from othello_rl.othello.positional_evaluation import PositionalEvaluation4x4v1, PositionalEvaluation8x8v2, PositionalEvaluation8x8v1
+import os
+import functools
 import tkinter as tk
+import tkinter.ttk as ttk
+from tkinter import filedialog
 from logging import getLogger
 from typing import Union, Optional
 from othello_rl.othello.agent import Agent, PlayerAgent, QLearningAgent, RandomAgent, MinMaxAgent
-from othello_rl.othello.features import Featuresv1
+from othello_rl.othello.features import Featuresv1, Featuresv2
 from othello_rl.othello.board import OthelloBoard, OthelloBoard4x4, OthelloBoard8x8
+from othello_rl.file import parse_ql_json
 
 logger = getLogger(__name__)
 
@@ -23,6 +28,9 @@ class OthelloApp(tk.Frame):
   """
   width = 800
   height = 600
+  AGENT_KEY = {'Player': PlayerAgent, 'Random': RandomAgent, 'MinMax': MinMaxAgent, 'Q-Learning': QLearningAgent}
+  POSEVAL_KEY = {'8x8 v1': PositionalEvaluation8x8v1, '8x8 v2': PositionalEvaluation8x8v2, '4x4 v1': PositionalEvaluation4x4v1}
+  FEATURES_KEY = {'v1': Featuresv1, 'v2': Featuresv2}
 
   def __init__(self, master: Optional[tk.Tk] = None) -> None:
     """
@@ -35,7 +43,7 @@ class OthelloApp(tk.Frame):
     """
     # 親クラスのコンストラクタを実行
     super().__init__(master, width=self.width, height=self.height, background='lightgray')
-    self.pack()
+    self.pack(fill='both')
 
     # タイトル
     self.master.title('Othell debug')
@@ -59,11 +67,98 @@ class OthelloApp(tk.Frame):
     self.focus_set()
 
     # オセロ盤の表示
-    self.othello_main = OthelloBoardGUI(self, 0, 0, 600)
-    self.__on_new_game()
+    othello_frame = ttk.Frame(self, width=600, height=600)
+    othello_frame.grid(row=0, column=0, rowspan=3, columnspan=3, sticky=tk.W+tk.E+tk.N+tk.S)
+    self.othello_main = OthelloBoardGUI(othello_frame, 0, 0, 600, 8)
+    self.othello_main.start_new_game(PlayerAgent(), PlayerAgent())
 
-    # stateのラベル
-    #self
+    # details
+    detail_main_frame = ttk.Frame(self, padding=[10, 5 , 5, 10], relief=tk.GROOVE)
+    detail_main_frame.grid(row=0, column=3, sticky=tk.W+tk.E+tk.N+tk.S)
+
+    ttk.Label(detail_main_frame, text='Board size').grid(row=0, column=0)
+    self.board_size_spinbox = ttk.Spinbox(detail_main_frame, values=(4,8))
+    self.board_size_spinbox.grid(row=0, column=1, pady=10)
+    self.board_size_spinbox.set(8)
+
+    agent1_frame = ttk.LabelFrame(detail_main_frame, text='Agent1')
+    agent1_frame.grid(row=1, column=0, columnspan=2, pady=10)
+    agent1_label = ttk.Label(agent1_frame, text='Agent Type')
+    agent1_label.grid(row=0, column=0)
+    self.agent1_combobox = ttk.Combobox(agent1_frame, value=list(self.AGENT_KEY.keys()), state='readonly')
+    self.agent1_combobox.grid(row=0, column=1, pady=5)
+    self.agent1_combobox.current(0)
+
+    option1_labelframe = ttk.Labelframe(agent1_frame, text='Option')
+    option1_labelframe.grid(row=1, column=0, columnspan=2, sticky=tk.W+tk.E+tk.N+tk.S)
+    ttk.Label(option1_labelframe, text='Deepth').grid(row=0, column=0, pady=5)
+    self.option1_minmax_deepth_spinbox = ttk.Spinbox(option1_labelframe,values=list(range(10)))
+    self.option1_minmax_deepth_spinbox.grid(row=0, column=1, columnspan=2, pady=5)
+    self.option1_minmax_deepth_spinbox.set(3)
+
+    ttk.Label(option1_labelframe, text='Positional Evaluation').grid(row=1, column=0, pady=5)
+    self.option1_minmax_poseval_combobox = ttk.Combobox(option1_labelframe, value=list(self.POSEVAL_KEY.keys()), state='readonly')
+    self.option1_minmax_poseval_combobox.grid(row=1, column=1, columnspan=2, pady=5)
+    self.option1_minmax_poseval_combobox.current(0)
+
+    ttk.Label(option1_labelframe, text='Features').grid(row=2, column=0, pady=5)
+    self.option1_ql_features_combobox = ttk.Combobox(option1_labelframe, value=list(self.FEATURES_KEY.keys()), state='readonly')
+    self.option1_ql_features_combobox.grid(row=2, column=1, columnspan=2, pady=5)
+    self.option1_ql_features_combobox.current(0)
+
+    ttk.Label(option1_labelframe, text='Data path').grid(row=3, column=0, pady=5)
+    self.option1_ql_data_path_entry_val = tk.StringVar()
+    self.option1_ql_data_path_entry = ttk.Entry(option1_labelframe, textvariable=self.option1_ql_data_path_entry_val)
+    self.option1_ql_data_path_entry.grid(row=3, column=1, pady=5)
+    ttk.Button(option1_labelframe, text='Reference', command=functools.partial(self.__file_select, 0)).grid(row=3, column=2)
+
+    ttk.Label(option1_labelframe, text='Initial value').grid(row=4, column=0, pady=5)
+    self.option1_ql_init_val_spinbox = ttk.Spinbox(option1_labelframe)
+    self.option1_ql_init_val_spinbox.grid(row=4, column=1, columnspan=2, pady=5)
+    self.option1_ql_init_val_spinbox.set(0.0)
+
+    agent2_frame = ttk.LabelFrame(detail_main_frame, text='Agent2')
+    agent2_frame.grid(row=2, column=0, columnspan=2, pady=10)
+    agent2_label = ttk.Label(agent2_frame, text='Agent Type')
+    agent2_label.grid(row=2, column=0)
+    self.agent2_combobox = ttk.Combobox(agent2_frame, value=list(self.AGENT_KEY.keys()), state='readonly')
+    self.agent2_combobox.grid(row=2, column=1, pady=5)
+    self.agent2_combobox.current(0)
+
+    option2_labelframe = ttk.Labelframe(agent2_frame, text='Option')
+    option2_labelframe.grid(row=3, column=0, columnspan=2, sticky=tk.W+tk.E+tk.N+tk.S)
+    ttk.Label(option2_labelframe, text='Deepth').grid(row=0, column=0, pady=5)
+    self.option2_minmax_deepth_spinbox = ttk.Spinbox(option2_labelframe,values=list(range(10)))
+    self.option2_minmax_deepth_spinbox.grid(row=0, column=1, columnspan=2, pady=5)
+    self.option2_minmax_deepth_spinbox.set(3)
+
+    ttk.Label(option2_labelframe, text='Positional Evaluation').grid(row=1, column=0, pady=5)
+    self.option2_minmax_poseval_combobox = ttk.Combobox(option2_labelframe, value=list(self.POSEVAL_KEY.keys()), state='readonly')
+    self.option2_minmax_poseval_combobox.grid(row=1, column=1, columnspan=2, pady=5)
+    self.option2_minmax_poseval_combobox.current(0)
+
+    ttk.Label(option2_labelframe, text='Features').grid(row=2, column=0, pady=5)
+    self.option2_ql_features_combobox = ttk.Combobox(option2_labelframe, value=list(self.FEATURES_KEY.keys()), state='readonly')
+    self.option2_ql_features_combobox.grid(row=2, column=1, columnspan=2, pady=5)
+    self.option2_ql_features_combobox.current(0)
+
+    ttk.Label(option2_labelframe, text='Data path').grid(row=3, column=0, pady=5)
+    self.option2_ql_data_path_entry_val = tk.StringVar()
+    self.option2_ql_data_path_entry = ttk.Entry(option2_labelframe, textvariable=self.option2_ql_data_path_entry_val)
+    self.option2_ql_data_path_entry.grid(row=3, column=1, pady=5)
+    ttk.Button(option2_labelframe, text='Reference', command=functools.partial(self.__file_select, 1)).grid(row=3, column=2)
+
+    ttk.Label(option2_labelframe, text='Initial value').grid(row=4, column=0, pady=5)
+    self.option2_ql_init_val_spinbox = ttk.Spinbox(option2_labelframe)
+    self.option2_ql_init_val_spinbox.grid(row=4, column=1, columnspan=2, pady=5)
+    self.option2_ql_init_val_spinbox.set(0.0)
+
+    agent_button = ttk.Button(detail_main_frame, text='New game', command=self.__push_agent_button)
+    agent_button.grid(row=3, column=0, columnspan=2, pady=5)
+    
+
+    #state_frame = ttk.Frame(self, )
+    #state_frame.grid(row=1, column=3, rowspan=2, sticky=tk.W+tk.E+tk.N+tk.S)
 
   def __on_new_game(self, event: Optional[tk.Event] = None) -> None:
     """
@@ -86,6 +181,49 @@ class OthelloApp(tk.Frame):
       イベントのプロパティ
     """
     self.othello_main.undo()
+
+  def __file_select(self, entry_idx: int) -> None:
+    """
+    
+    """
+    file_types = [('JSON', '*.json')]
+    entry_list = [self.option1_ql_data_path_entry_val, self.option2_ql_data_path_entry_val]
+    file_path = filedialog.askopenfilename(filetypes=file_types, initialdir=os.path.abspath(os.path.dirname(__file__)))
+    entry_list[entry_idx].set(file_path)
+
+  def __push_agent_button(self) -> None:
+    """
+    
+    """
+    agent1 = self.AGENT_KEY[self.agent1_combobox.get()]
+    agent2 = self.AGENT_KEY[self.agent2_combobox.get()]
+    board_size = int(self.board_size_spinbox.get())
+
+    if agent1 == MinMaxAgent:
+      deepth = int(self.option1_minmax_deepth_spinbox.get())
+      poseval = self.POSEVAL_KEY[self.option1_minmax_poseval_combobox.get()]()
+      agent1 = agent1(deepth, poseval)
+    elif agent1 == QLearningAgent:
+      features = self.FEATURES_KEY[self.option1_ql_features_combobox.get()]()
+      data = parse_ql_json(self.option1_ql_data_path_entry_val, 1)
+      init_val = float(self.option1_ql_init_val_spinbox.get())
+      agent1 = agent1(features, data, init_val)
+    else:
+      agent1 = agent1()
+
+    if agent2 == MinMaxAgent:
+      deepth = int(self.option2_minmax_deepth_spinbox.get())
+      poseval = self.POSEVAL_KEY[self.option2_minmax_poseval_combobox.get()]()
+      agent2 = agent2(deepth, poseval)
+    elif agent2 == QLearningAgent:
+      features = self.FEATURES_KEY[self.option2_ql_features_combobox.get()]()
+      data = parse_ql_json(self.option2_ql_data_path_entry_val, 1)
+      init_val = float(self.option2_ql_init_val_spinbox.get())
+      agent2 = agent2(features, data, init_val)
+    else:
+      agent2 = agent2()
+
+    self.othello_main.start_new_game(agent1, agent2, board_size)
 
 
 class OthelloBoardGUI(tk.Canvas):
@@ -111,7 +249,7 @@ class OthelloBoardGUI(tk.Canvas):
     agent2
   """
 
-  def __init__(self, parent: tk.Tk, place_x: int, place_y: int, board_width: int, board_size: int = 8) -> None:
+  def __init__(self, parent: tk.Frame, place_x: int, place_y: int, board_width: int, board_size: int = 8) -> None:
     """
     コンストラクタ
 
@@ -145,7 +283,7 @@ class OthelloBoardGUI(tk.Canvas):
       self.create_line((self.board_width-self.line_width)/self.board_size*i+self.line_width/2, 0, (self.board_width-self.line_width)/self.board_size*i+self.line_width/2, self.board_width, width=self.line_width, fill='black')
     
 
-  def start_new_game(self, agent1: Agent, agent2: Agent, first_player_num: int = 0) -> None:
+  def start_new_game(self, agent1: Agent, agent2: Agent, board_size: int = 8, first_player_num: int = 0) -> None:
     """
     新しくゲームを始めるメソッド
 
@@ -160,6 +298,7 @@ class OthelloBoardGUI(tk.Canvas):
     """
     self.agent1 = agent1
     self.agent2 = agent2
+    self.board_size = board_size
 
     if self.board_size == 4:  
       self.game = OthelloBoard4x4(first_player_num)
