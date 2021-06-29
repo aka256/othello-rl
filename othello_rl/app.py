@@ -43,7 +43,7 @@ class OthelloApp(tk.Frame):
     """
     # 親クラスのコンストラクタを実行
     super().__init__(master, width=self.width, height=self.height, background='lightgray')
-    self.pack(fill='both')
+    self.pack(expand=True)
 
     # タイトル
     self.master.title('Othell debug')
@@ -66,6 +66,9 @@ class OthelloApp(tk.Frame):
     self.bind('<Control-Key-q>', quit)
     self.focus_set()
 
+    #self.grid_columnconfigure(0, weight=0)
+    self.grid_rowconfigure(0, weight=1)
+
     # オセロ盤の表示
     othello_frame = ttk.Frame(self, width=600, height=600)
     othello_frame.grid(row=0, column=0, rowspan=3, columnspan=3, sticky=tk.W+tk.E+tk.N+tk.S)
@@ -76,11 +79,13 @@ class OthelloApp(tk.Frame):
     detail_main_frame = ttk.Frame(self, padding=[10, 5 , 5, 10], relief=tk.GROOVE)
     detail_main_frame.grid(row=0, column=3, sticky=tk.W+tk.E+tk.N+tk.S)
 
+    # board_size
     ttk.Label(detail_main_frame, text='Board size').grid(row=0, column=0)
     self.board_size_spinbox = ttk.Spinbox(detail_main_frame, values=(4,8))
     self.board_size_spinbox.grid(row=0, column=1, pady=10)
     self.board_size_spinbox.set(8)
 
+    # agent1
     agent1_frame = ttk.LabelFrame(detail_main_frame, text='Agent1')
     agent1_frame.grid(row=1, column=0, columnspan=2, pady=10)
     agent1_label = ttk.Label(agent1_frame, text='Agent Type')
@@ -117,6 +122,7 @@ class OthelloApp(tk.Frame):
     self.option1_ql_init_val_spinbox.grid(row=4, column=1, columnspan=2, pady=5)
     self.option1_ql_init_val_spinbox.set(0.0)
 
+    # agent2
     agent2_frame = ttk.LabelFrame(detail_main_frame, text='Agent2')
     agent2_frame.grid(row=2, column=0, columnspan=2, pady=10)
     agent2_label = ttk.Label(agent2_frame, text='Agent Type')
@@ -155,10 +161,6 @@ class OthelloApp(tk.Frame):
 
     agent_button = ttk.Button(detail_main_frame, text='New game', command=self.__push_agent_button)
     agent_button.grid(row=3, column=0, columnspan=2, pady=5)
-    
-
-    #state_frame = ttk.Frame(self, )
-    #state_frame.grid(row=1, column=3, rowspan=2, sticky=tk.W+tk.E+tk.N+tk.S)
 
   def __on_new_game(self, event: Optional[tk.Event] = None) -> None:
     """
@@ -277,11 +279,13 @@ class OthelloBoardGUI(tk.Canvas):
     # キャンバスに左クリックをバインド(オセロ盤内なら全ての場所でクリックイベントを取得する)
     self.bind('<1>', self.__click_board)
 
-    # オセロ盤の線
+  def __draw_line(self) -> None:
+    """
+    オセロ盤の線を引く
+    """
     for i in range(self.board_size+1):
       self.create_line(0, (self.board_width-self.line_width)/self.board_size*i+self.line_width/2, self.board_width, (self.board_width-self.line_width)/self.board_size*i+self.line_width/2, width=self.line_width, fill='black')
       self.create_line((self.board_width-self.line_width)/self.board_size*i+self.line_width/2, 0, (self.board_width-self.line_width)/self.board_size*i+self.line_width/2, self.board_width, width=self.line_width, fill='black')
-    
 
   def start_new_game(self, agent1: Agent, agent2: Agent, board_size: int = 8, first_player_num: int = 0) -> None:
     """
@@ -299,6 +303,10 @@ class OthelloBoardGUI(tk.Canvas):
     self.agent1 = agent1
     self.agent2 = agent2
     self.board_size = board_size
+
+    # オセロ盤の線
+    self.delete('all')
+    self.__draw_line()
 
     if self.board_size == 4:  
       self.game = OthelloBoard4x4(first_player_num)
