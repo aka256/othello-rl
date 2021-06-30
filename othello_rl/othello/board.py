@@ -377,7 +377,7 @@ class OthelloBoard(metaclass=ABCMeta):
       - 2 : 引き分け
       - -1: ゲームがまだ終了していない
     """
-    if self.get_next_state() == 2:
+    if self.get_next_state() != 2:
       return -1
     
     a_count = self.get_piece_num(0)
