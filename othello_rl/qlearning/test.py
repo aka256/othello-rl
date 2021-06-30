@@ -4,6 +4,48 @@ from othello_rl.othello.board import OthelloBoard8x8, OthelloBoard4x4
 from othello_rl.file import parse_ql_json
 import matplotlib.pyplot as plt
 
+def tester(board_size: int, agent1: Agent, agent2: Agent, do_from_agent1: bool = True):
+  """
+  オセロを1ゲーム行う
+
+  Parameters
+  ----------
+  board_size : int
+    盤のサイズ
+  agent1 : Agent
+    agent1
+  agent2 : Agent
+    agent2
+  do_from_agent1 : bool, dafault True
+    agent1からゲームを始めるか否か
+
+  Returns
+  -------
+  result : int
+    0: agent1, 1: agent2, 2: draw
+  """
+  if board_size == 8:
+    othello = OthelloBoard8x8(0)
+  elif board_size == 4:
+    othello = OthelloBoard4x4(0)
+
+  agent = [agent1, agent2]
+
+  if not do_from_agent1:
+    othello.change_player()
+
+  while True:
+    agent[othello.now_turn].step(othello)
+    
+    next_state = othello.get_next_state()
+    if next_state == 0:
+      othello.change_player()
+    elif next_state == 1:
+      pass
+    else:
+      result = othello.get_result()
+      return result
+
 def ql_test(board_size: int, features: Features, dic: dict, init_value: int, opponent_agent: Agent, count: int, ql_order: int = 1):
   ql_agent = QLearningAgent(features, dic, init_value)
   result_sum = [0, 0, 0]
@@ -36,7 +78,12 @@ def test_graph(file_name: str, board_size: int, features: Features, init_value: 
   result = []
   for i in range(dict_num):
     dic = parse_ql_json(dir+str(i)+path,1)
-    result.append(ql_test(board_size, features, dic, init_value, opponent_agent, count, ql_order))
+    l = [0, 0, 0]
+    for j in range(count):
+      r = tester(board_size, QLearningAgent(features, dic, init_value), opponent_agent, True if j%2==0 else False)
+      l[r] += 1
+    #result.append(ql_test(board_size, features, dic, init_value, opponent_agent, count, ql_order))
+    result.append(l)
     print('win: {}, lose: {}, draw: {}'.format(*(result[-1])))
   
   fig, ax = plt.subplots()

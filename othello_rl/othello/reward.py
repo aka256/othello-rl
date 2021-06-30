@@ -37,10 +37,19 @@ class Reward4x4v1(Reward):
     result = othello.get_result()
     if result != -1:
       if result == 0:
+        #if ql_num != 0:
+        #  print('Lose')
+        #else:
+        #  print('Win')
         reward = 1
       elif result == 1:
+        #if ql_num != 0:
+        #  print('Win')
+        #else:
+        #  print('Lose')
         reward = -1
       else:
+        #print('Draw')
         reward = 0
     else:
       d_0 = othello.get_determine_piece(0)

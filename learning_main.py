@@ -17,15 +17,15 @@ def main():
             OthelloQLearningManager(board_size=4, 
                                     features=Featuresv2(), 
                                     opp_agent=MinMaxAgent(5, PositionalEvaluation4x4v1()), 
-                                    ql=QLearning(alpha=0.5, gamma=0.8, data={}), 
-                                    epsilon=0.3, 
+                                    ql=QLearning(alpha=0.6, gamma=0.6, data={}), 
+                                    epsilon=0.5, 
                                     reward=Reward4x4v1()), 
             './save/test1/', 
             'test.json', 
             True, 
             10)
   '''
-  test_graph('hoge.png', 4, Featuresv2(), 0, './save/test1/', 'test.json', 10, RandomAgent(), 1000)
+  test_graph('vsRandom2.png', 4, Featuresv2(), 0, './save/test1/', 'test.json', 10, RandomAgent(), 1000)
 
 if __name__ == '__main__':
   basicConfig(level=ERROR)
