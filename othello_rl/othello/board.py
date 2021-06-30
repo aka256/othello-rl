@@ -221,7 +221,7 @@ class OthelloBoard(metaclass=ABCMeta):
     if player_legal_board == 0 and opponent_legal_board != 0:
       return 1
     elif player_legal_board == 0 and opponent_legal_board == 0:
-      pprint(self.get_board_state())
+      #pprint(self.get_board_state())
       return 2
     
     return 0
