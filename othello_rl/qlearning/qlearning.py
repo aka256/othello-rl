@@ -24,7 +24,7 @@ class QLearning:
     self.data = data
     self.init_value = init_value
 
-  def get(self, s: int, a: int) -> int:
+  def get(self, s: int, a: int) -> float:
     """
     dataから値の取得
 
@@ -73,9 +73,17 @@ class QLearning:
       Q(s_t+1, a)
     q_old : float
       Q(s, a)
+
+    Returns
+    ------
+    q_new : float
+      updateされたQ値
     """
     if len(q_old) == 0:
       q_old = self.get(s, a)
+    else:
+      q_old = q_old[0]
+    #print('alpha:{}, q_old:{}, r:{}, gamma:{}, q:{}'.format(self.alpha, q_old, r, self.gamma, q))
     q_new = (1-self.alpha)*q_old+self.alpha*(r + self.gamma*q)
 
     self.__set(s, a, q_new)

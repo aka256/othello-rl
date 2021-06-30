@@ -3,7 +3,7 @@ import json
 from logging import getLogger
 from othello_rl.qlearning.qlearning import QLearning
 from othello_rl.error import CannotReverseError
-from othello_rl.othello.board import OthelloBoard
+from othello_rl.othello.board import OthelloBoard4x4, OthelloBoard8x8
 from othello_rl.othello.features import Features
 from othello_rl.othello.agent import Agent
 from othello_rl.othello.reward import Reward
@@ -17,6 +17,8 @@ class OthelloQLearningManager:
 
   Attributes
   ----------
+  board_size : int
+    盤のサイズ
   features : othello.features.Features
     盤面の特徴量選択方法
   opp_agent : othello.agent.Agent
@@ -31,10 +33,12 @@ class OthelloQLearningManager:
     扱っているゲーム
   """
 
-  def __init__(self, features: Features, opp_agent: Agent, ql: QLearning, epsilon: float, reward: Reward) -> None:
+  def __init__(self, board_size: int, features: Features, opp_agent: Agent, ql: QLearning, epsilon: float, reward: Reward) -> None:
     """
     コンストラクタ
 
+    board_size : int
+      盤のサイズ
     features : othello.features.Features
       盤面の特徴量選択方法
     opp_agent : othello.agent.Agent
@@ -46,6 +50,7 @@ class OthelloQLearningManager:
     reward : othello.reward.Reward
       報酬選択方法
     """
+    self.board_size = board_size
     self.features = features
     self.agent = opp_agent
     self.ql = ql
@@ -90,7 +95,10 @@ class OthelloQLearningManager:
     do_from_opponent : bool, dafault True
       相手のagentからゲームを開始するか否か
     """
-    self.game = OthelloBoard(0)
+    if self.board_size == 4:
+      self.game = OthelloBoard4x4(0)
+    elif self.board_size == 8:
+      self.game = OthelloBoard8x8(0)
     opp_turn = do_from_opponent
     action_data = []
     while True:
@@ -99,7 +107,7 @@ class OthelloQLearningManager:
         if not result:
           raise CannotReverseError()
       else:
-        action = list(self.__step(self.game))
+        action = list(self.__step())
         if do_from_opponent:
           reward = self.reward.get(self.game, 1)
         else:
