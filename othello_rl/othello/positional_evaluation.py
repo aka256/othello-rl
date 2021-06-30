@@ -152,3 +152,30 @@ class PositionalEvaluation4x4v1(PositionalEvaluation):
       retval *= -1
 
     return retval
+
+class PositionalEvaluation4x4v2(PositionalEvaluation):
+  weight = [
+    [10, -10, -10, 10],
+    [-10, 0, 0, -10],
+    [-10, 0, 0, -10],
+    [10, -10, -10, 10]]
+  def eval(self, othello: OthelloBoard4x4, reverse_eval: bool = False) -> int:
+    retval = 0
+    idx = 1
+    for i in range(4):
+      for j in range(4):
+        if othello.board[0] & idx:
+          retval += self.weight[i][j]
+        elif othello.board[1] & idx:
+          retval += self.weight[i][j]
+        idx <<= 1
+
+    d0 = othello.get_determine_piece(0)
+    d1 = othello.get_determine_piece(1)
+
+    retval += (d0 - d1)*30
+
+    if reverse_eval:
+      retval *= -1
+
+    return retval

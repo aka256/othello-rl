@@ -74,13 +74,27 @@ def ql_test(board_size: int, features: Features, dic: dict, init_value: int, opp
 
   return result_sum
 
-def test_graph(file_name: str, board_size: int, features: Features, init_value: int, dir: str, path: str, dict_num: int, opponent_agent: Agent, count: int, ql_order: int = 1):
+def test_graph(file_name: str, board_size: int, features: Features, init_value: int, dir: str, path: str, dict_num: int, opponent_agent: Agent, count: int, order_type : int):
+  """
+  
+  Parameters
+  ----------
+  order_type : int
+    0: 先手ql
+    1: 先手opp_agent
+    2: 交互
+  """
   result = []
   for i in range(dict_num):
     dic = parse_ql_json(dir+str(i)+path,1)
     l = [0, 0, 0]
     for j in range(count):
-      r = tester(board_size, QLearningAgent(features, dic, init_value), opponent_agent, True if j%2==0 else False)
+      if order_type == 0:
+        r = tester(board_size, QLearningAgent(features, dic, init_value), opponent_agent, True)
+      elif order_type == 1:
+        r = tester(board_size, QLearningAgent(features, dic, init_value), opponent_agent, False)
+      elif order_type == 2:
+        r = tester(board_size, QLearningAgent(features, dic, init_value), opponent_agent, True if j%2==0 else False)
       l[r] += 1
     #result.append(ql_test(board_size, features, dic, init_value, opponent_agent, count, ql_order))
     result.append(l)
