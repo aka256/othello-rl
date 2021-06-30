@@ -1,7 +1,10 @@
 from abc import ABCMeta, abstractmethod
 from othello_rl.bit_opperation import pop_count, flip_horizontal_bm4, flip_vertical_bm4, flip_diagonal_bm4, flip_anti_diagonal_bm4
 from othello_rl.tree import NodeData
+from logging import getLogger
+from pprint import pprint
 
+logger = getLogger(__name__)
 class OthelloData(NodeData):
   """
   ある時間でのオセロの盤面データ
@@ -218,6 +221,7 @@ class OthelloBoard(metaclass=ABCMeta):
     if player_legal_board == 0 and opponent_legal_board != 0:
       return 1
     elif player_legal_board == 0 and opponent_legal_board == 0:
+      pprint(self.get_board_state())
       return 2
     
     return 0

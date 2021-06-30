@@ -1,6 +1,7 @@
 from othello_rl.othello.positional_evaluation import PositionalEvaluation4x4v1, PositionalEvaluation8x8v2, PositionalEvaluation8x8v1
 import os
 import functools
+import threading
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog
@@ -219,7 +220,7 @@ class OthelloApp(tk.Frame):
       agent2 = agent2(deepth, poseval)
     elif agent2 == QLearningAgent:
       features = self.FEATURES_KEY[self.option2_ql_features_combobox.get()]()
-      data = parse_ql_json(self.option2_ql_data_path_entry_val, 1)
+      data = parse_ql_json(self.option2_ql_data_path_entry_val.get(), 1)
       init_val = float(self.option2_ql_init_val_spinbox.get())
       agent2 = agent2(features, data, init_val)
     else:
@@ -245,10 +246,8 @@ class OthelloBoardGUI(tk.Canvas):
     オセロのサイズ, 4 or 8
   game : othello.board.OthelloBoard
     OthelloBoardを管理する変数
-  agent1 : othello.agent.Agent
-    agent1
-  agent2 : othello.agent.Agent
-    agent2
+  agent : list[othello.agent.Agent]
+    agent
   """
 
   def __init__(self, parent: tk.Frame, place_x: int, place_y: int, board_width: int, board_size: int = 8) -> None:
@@ -300,8 +299,7 @@ class OthelloBoardGUI(tk.Canvas):
     first_player_num : int, dafault 0
       最初のプレイヤー
     """
-    self.agent1 = agent1
-    self.agent2 = agent2
+    self.agent = [agent1, agent2]
     self.board_size = board_size
 
     # オセロ盤の線
@@ -312,39 +310,38 @@ class OthelloBoardGUI(tk.Canvas):
       self.game = OthelloBoard4x4(first_player_num)
     elif self.board_size == 8:
       self.game = OthelloBoard8x8(first_player_num)
-    self.__draw_othello_state(self.game)
 
-    self.__step()
+    self.__loop()
 
-  def __step(self):
-    if hasattr(self, 'game'):
-      if self.game.now_turn == 0:
-        if type(self.agent1) is PlayerAgent:
-          self.enable_click_board = True
-        else:
-          result = self.agent1.step(self.game)
+  '''
+  def __step(self) -> bool:
+    if self.game.now_turn == 0:
+      if type(self.agent1) is PlayerAgent:
+        self.enable_click_board = True
       else:
-        if type(self.agent2) is PlayerAgent:
-          self.enable_click_board = True
-        else:
-          result = self.agent2.step(self.game)
-      
-      if not self.enable_click_board and result:
-        next = self.game.get_next_state()
-        #logger.debug('Next State: {}'.format(next))
-        if next == 0:
-          self.game.change_player()
-        elif next == 1:
-          pass
-        else:
-          logger.debug('Fin')
-        self.__draw_othello_state(self.game)
-        if next == 0 or next == 1:
-          return self.__step()
-      elif not self.enable_click_board and not result:
-        pass
+        result = self.agent1.step(self.game)
     else:
+      if type(self.agent2) is PlayerAgent:
+        self.enable_click_board = True
+      else:
+        result = self.agent2.step(self.game)
+    
+    if not self.enable_click_board and result:
+      next = self.game.get_next_state()
+      if next == 0:
+        self.game.change_player()
+      elif next == 1:
+        pass
+      else:
+        logger.debug('Fin')
+      self.__draw_othello_state(self.game)
+      if next == 0 or next == 1:
+        return True
+    elif not self.enable_click_board and not result:
       pass
+
+    return False
+  '''
 
   def __click_board(self, event: tk.Event) -> None:
     """
@@ -366,29 +363,57 @@ class OthelloBoardGUI(tk.Canvas):
       if event.y-self.board_width/self.board_size/2*(2*i+1)-self.frame_width/2 <= y <= event.y-self.board_width/self.board_size/2*(2*i+1)+self.frame_width/2:
         y = i
     
-    logger.debug('x: {}, y: {}'.format(x, y))
+    logger.debug('clicked (x:{}, y:{})'.format(x, y))
 
     if x != -1 and y != -1:
-      if self.game.now_turn == 0:
-        result = self.agent1.step(self.game, x, y)
-      else:
-        result = self.agent2.step(self.game, x, y)
-      
+      result = self.agent[self.game.now_turn].step(self.game, x, y)
+
       if result:
-        next = self.game.get_next_state()
-        #logger.debug('Next State: {}'.format(next))
-        if next == 0:
+        next_state = self.game.get_next_state()
+        if next_state == 0:
           self.game.change_player()
-        elif next == 1:
+        elif next_state == 1:
           pass
         else:
-          logger.debug('Fin')
-        self.__draw_othello_state(self.game)
+          logger.debug('Fin in click_board')
+        self.enable_click_board = False
+        self.__draw_othello_state(self.game, False)
+
+        if next_state == 0 or next_state == 1:
+          self.__loop()
       else:
         pass
-    
-    self.enable_click_board = False
-    self.__step()
+
+  def __loop(self):
+    """
+    オセロの処理のメインループ
+    PlayerAgent以外のstepはこれで行う
+    """
+    if type(self.agent[self.game.now_turn]) is PlayerAgent:
+      self.enable_click_board = True
+      self.__draw_othello_state(self.game)
+      return
+
+    self.thread = threading.Thread(target=self.__loop_sub)
+    self.thread.start()
+
+  def __loop_sub(self):
+    result = self.agent[self.game.now_turn].step(self.game)
+    if not result:
+      logger.error('Cannot reverse')
+      return
+
+    next_state = self.game.get_next_state()
+    if next_state == 2:
+      logger.debug('Fin in loop_sub')
+      self.__draw_othello_state(self.game)
+      return
+    elif next_state == 0:
+      self.game.change_player()
+    elif next_state == 1:
+      pass
+
+    self.__loop()
 
   def __get_frame_tag(self, x: int, y: int) -> str:
     """
