@@ -1,4 +1,3 @@
-from othello_rl.othello.positional_evaluation import PositionalEvaluation4x4v1, PositionalEvaluation8x8v2, PositionalEvaluation8x8v1
 import os
 import functools
 import threading
@@ -6,16 +5,17 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog
 from logging import getLogger
-from typing import Union, Optional
+from typing import Optional
 from othello_rl.othello.agent import Agent, PlayerAgent, QLearningAgent, RandomAgent, MinMaxAgent
 from othello_rl.othello.features import Featuresv1, Featuresv2
 from othello_rl.othello.board import OthelloBoard, OthelloBoard4x4, OthelloBoard8x8
+from othello_rl.othello.positional_evaluation import PositionalEvaluation4x4v1,PositionalEvaluation4x4v2, PositionalEvaluation8x8v2, PositionalEvaluation8x8v1
 from othello_rl.file import parse_ql_json
 
 logger = getLogger(__name__)
 
 AGENT_KEY = {'Player': PlayerAgent, 'Random': RandomAgent, 'MinMax': MinMaxAgent, 'Q-Learning': QLearningAgent}
-POSEVAL_KEY = {'8x8 v1': PositionalEvaluation8x8v1, '8x8 v2': PositionalEvaluation8x8v2, '4x4 v1': PositionalEvaluation4x4v1}
+POSEVAL_KEY = {'8x8 v1': PositionalEvaluation8x8v1, '8x8 v2': PositionalEvaluation8x8v2, '4x4 v1': PositionalEvaluation4x4v1, '4x4 v2': PositionalEvaluation4x4v2}
 FEATURES_KEY = {'v1': Featuresv1, 'v2': Featuresv2}
 
 class OthelloApp(tk.Frame):
@@ -99,7 +99,7 @@ class OthelloApp(tk.Frame):
     option1_labelframe = ttk.Labelframe(agent1_frame, text='Option')
     option1_labelframe.grid(row=1, column=0, columnspan=2, sticky=tk.W+tk.E+tk.N+tk.S)
     ttk.Label(option1_labelframe, text='Deepth').grid(row=0, column=0, pady=5)
-    self.option1_minmax_deepth_spinbox = ttk.Spinbox(option1_labelframe,values=list(range(10)))
+    self.option1_minmax_deepth_spinbox = ttk.Spinbox(option1_labelframe, from_=1, to=100, increment=1)
     self.option1_minmax_deepth_spinbox.grid(row=0, column=1, columnspan=2, pady=5)
     self.option1_minmax_deepth_spinbox.set(3)
 
@@ -136,7 +136,7 @@ class OthelloApp(tk.Frame):
     option2_labelframe = ttk.Labelframe(agent2_frame, text='Option')
     option2_labelframe.grid(row=3, column=0, columnspan=2, sticky=tk.W+tk.E+tk.N+tk.S)
     ttk.Label(option2_labelframe, text='Deepth').grid(row=0, column=0, pady=5)
-    self.option2_minmax_deepth_spinbox = ttk.Spinbox(option2_labelframe,values=list(range(10)))
+    self.option2_minmax_deepth_spinbox = ttk.Spinbox(option2_labelframe, from_=1, to=100, increment=1)
     self.option2_minmax_deepth_spinbox.grid(row=0, column=1, columnspan=2, pady=5)
     self.option2_minmax_deepth_spinbox.set(3)
 
