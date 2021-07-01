@@ -3,12 +3,12 @@ from othello_rl.othello.board import OthelloBoard, OthelloBoard4x4, OthelloBoard
 
 class Reward(metaclass=ABCMeta):
   @abstractmethod
-  def get(self, othello: OthelloBoard, ql_num: int):
+  def get(self, othello: OthelloBoard, ql_num: int) -> float:
     pass
 
 class Rewardv1(Reward):
   scale = 10
-  def get(self, othello: OthelloBoard8x8, ql_num: int) -> int:
+  def get(self, othello: OthelloBoard8x8, ql_num: int) -> float:
     result = othello.get_result()
     if result != -1:
       if result == 0:
@@ -33,7 +33,7 @@ class Rewardv1(Reward):
 
 
 class Reward4x4v1(Reward):
-  def get(self, othello: OthelloBoard4x4, ql_num: int) -> int:
+  def get(self, othello: OthelloBoard4x4, ql_num: int) -> float:
     result = othello.get_result()
     if result != -1:
       if result == 0:

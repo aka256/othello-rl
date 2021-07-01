@@ -11,21 +11,24 @@ from othello_rl.qlearning.test import test_graph
 logger = getLogger(__name__)
 
 def main():
-  '''
+  ql_manager = OthelloQLearningManager(board_size=4, 
+                                      features=Featuresv2(), 
+                                      opp_agent=MinMaxAgent(6, PositionalEvaluation4x4v2()), 
+                                      ql=QLearning(alpha=0.6, gamma=0.6, data={}), 
+                                      epsilon=0.5, 
+                                      reward=Reward4x4v1())
+
   learn_mp( 4, 
             10000, 
-            OthelloQLearningManager(board_size=4, 
-                                    features=Featuresv2(), 
-                                    opp_agent=MinMaxAgent(12, PositionalEvaluation4x4v2()), 
-                                    ql=QLearning(alpha=0.6, gamma=0.6, data={}), 
-                                    epsilon=0.5, 
-                                    reward=Reward4x4v1()), 
-            './save/test5/', 
+            ql_manager, 
+            './save/test8/', 
             'test.json', 
             True, 
             10)
-  '''
-  test_graph('vsRandom_ql-opp.png', 4, Featuresv2(), 0, './save/test5/', 'test.json', 10, RandomAgent(), 1000, 0)
+  
+  ql_manager.gen_result_graph('lose_line', './save/test8/lose.png')
+  ql_manager.gen_result_graph('win_line', './save/test8/win.png')
+  #test_graph('vsRandom_alt.png', 4, Featuresv2(), 0, './save/test7/', 'test.json', 10, RandomAgent(), 10000, 2)
 
 if __name__ == '__main__':
   basicConfig(level=ERROR)

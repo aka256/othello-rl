@@ -1,6 +1,8 @@
 from abc import ABCMeta, abstractmethod
 from othello_rl.othello.board import OthelloBoard, OthelloBoard4x4, OthelloBoard8x8
 
+# TODO: 終端での処理の追加
+
 class PositionalEvaluation(metaclass=ABCMeta):
   """
   局面評価クラスの抽象クラス
@@ -155,10 +157,10 @@ class PositionalEvaluation4x4v1(PositionalEvaluation):
 
 class PositionalEvaluation4x4v2(PositionalEvaluation):
   weight = [
-    [10, -10, -10, 10],
-    [-10, 0, 0, -10],
-    [-10, 0, 0, -10],
-    [10, -10, -10, 10]]
+    [10, -2, -2, 10],
+    [-2, 0, 0, -2],
+    [-2, 0, 0, -2],
+    [10, -2, -2, 10]]
   def eval(self, othello: OthelloBoard4x4, reverse_eval: bool = False) -> int:
     retval = 0
     idx = 1
