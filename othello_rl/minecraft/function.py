@@ -1,9 +1,8 @@
 from logging import getLogger
-import math
-from os import write
-from othello_rl.file import parse_ql_json
+from othello_rl.error import GenFileNumError
 
 logger = getLogger(__name__)
+FILE_NUM_MAX = 2000
 
 def gen_btree(data: list[int], order: int, save_path: str, function_path: str, objective_name: str, score_holder_name: str, ret_objective_name: str, ret_score_holder_name: str, storage_path: str, storage_array_name: str):
   """
@@ -71,6 +70,16 @@ def gen_btree(data: list[int], order: int, save_path: str, function_path: str, o
   rec(0, len(data), 0)
 
 def gen_ql_data_search(ql_data_keys: list[int], file_num_limit: int):
+  """
+  QLearningでの学習データ検索用のFunction生成
+
+  Parameters
+  ----------
+  ql_data_keys : list[int]
+    qlデータのkey
+  file_num_limit : int
+    生成するファイルの上限値
+  """
   i = 2   # TODO: order算出の改善
   while True:
     p = 1
@@ -83,6 +92,9 @@ def gen_ql_data_search(ql_data_keys: list[int], file_num_limit: int):
       continue
     order = i
     break
+
+  if p_sum > FILE_NUM_MAX:
+    raise GenFileNumError()
 
   gen_btree(ql_data_keys, order, './tmp/datapack/', 'test:test', 'Args', '$0', 'Return', '$0', 'othello_data:', 'ql_data')
   

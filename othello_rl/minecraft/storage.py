@@ -1,5 +1,4 @@
 from nbt import nbt
-from othello_rl.file import parse_ql_json
 
 def get_empty_storage(name_space: str, data_ver: int = 2724) -> nbt.NBTFile:
   """
@@ -32,24 +31,21 @@ def get_empty_storage(name_space: str, data_ver: int = 2724) -> nbt.NBTFile:
 
   return f
 
-def gen_ql_data_storage(path: str, name_space: str, name: str, save_path: str, scale: int) -> None:
+def gen_ql_data_storage(ql_data_values: list[int], name_space: str, name: str, save_path: str) -> None:
   """
   QLearning用のStorageの生成
 
   Parameters
   ----------
-  path : str
-    保存場所
+  ql_data_values : list[int]
+    Storageに変換するデータ
   name_space : str
     `name_space`:`name`
   name : str
     `name_space`:`name`
   save_path : str
     storageの保存場所
-  scale : int
-    Q値をInt32にする際の倍率
   """
-  data = parse_ql_json(path, scale)
   f = get_empty_storage(name_space)
   
   name_com = nbt.TAG_Compound()
@@ -58,7 +54,7 @@ def gen_ql_data_storage(path: str, name_space: str, name: str, save_path: str, s
   
   text_tag = nbt.TAG_String('test','ql_data')
   data_list = nbt.TAG_List(name='data', type=nbt.TAG_Int)
-  for v in data.values():
+  for v in ql_data_values:
     data_list.tags.append(nbt.TAG_Int(value=int(v)))
   name_com.tags.append(text_tag)
   name_com.tags.append(data_list)
