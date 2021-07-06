@@ -28,11 +28,15 @@ def learn_mp(pool_size: int, count: int, ql_manager: OthelloQLearningManager, sa
   startTime = time.time()
   with Manager() as manager:
     ql_manager.ql.data = manager.dict()
+    ql_manager.learning_results = manager.list()
     for i in range(save_interval):
       with Pool(pool_size) as pool:  
         l =[True, False]*(count//save_interval//2)
         pool.map(ql_manager.learn_one_game, l)
-      print('count: {}, time: {}'.format(count//save_interval*i, time.time()-startTime))
+      print('count: {:05}, time: {:.4f}'.format(count//save_interval*i, time.time()-startTime))
 
       if save_regularly:
         ql_manager.save_data(save_dir+str(i)+save_file_name, True)
+
+    ql_manager.ql.data = dict(ql_manager.ql.data)
+    ql_manager.learning_results = list(ql_manager.learning_results)

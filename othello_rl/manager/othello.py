@@ -7,6 +7,7 @@ from othello_rl.othello.board import OthelloBoard4x4, OthelloBoard8x8
 from othello_rl.othello.features import Features
 from othello_rl.othello.agent import Agent
 from othello_rl.othello.reward import Reward
+import matplotlib.pyplot as plt
 
 logger = getLogger(__name__)
 
@@ -59,6 +60,8 @@ class OthelloQLearningManager:
     self.epsilon = epsilon
     self.reward = reward
 
+    self.learning_results = []
+
   def __step(self) -> tuple[int, int, float]:
     """
     ε-Greedy法に基づいて、オセロを一手進める
@@ -103,6 +106,9 @@ class OthelloQLearningManager:
       self.game = OthelloBoard8x8(0)
     opp_turn = do_from_opponent
     action_data = []
+    reward_sum = 0
+    self_count = 0
+
     while True:
       if opp_turn:
         result = self.agent.step(self.game)
@@ -116,6 +122,8 @@ class OthelloQLearningManager:
           reward = self.reward.get(self.game, 0)
         action.append(reward)
         action_data.append(action)
+        reward_sum += reward
+        self_count += 1
         
       next_state = self.game.get_next_state()
       if next_state == 1:
@@ -131,6 +139,8 @@ class OthelloQLearningManager:
     else:
       reward = self.reward.get(self.game, 0)
     action_data[-1][-1] = reward
+
+    self.learning_results.append([reward, reward_sum/self_count]) # [result, reward_ave]
 
     # learning
     before_q = 0
@@ -160,3 +170,27 @@ class OthelloQLearningManager:
         json.dump(new_dict, f, indent=2)
       else:
         f.write(str(self.ql.data))
+
+  def gen_learned_trend_graph(self, path, span):
+    win_rate = []
+    lose_rate = []
+    draw_rate = []
+    reward = []
+    for i in range(len(self.learning_results)//span):
+      r = 0
+      l = [0, 0, 0]
+      for j in self.learning_results[i*span:(i+1)*span]:
+        l[j[0]+1] += 1
+        r += j[1]
+
+      win_rate.append(l[2]/span)
+      draw_rate.append(l[1]/span)
+      lose_rate.append(l[0]/span)
+      reward.append(r/span)
+    
+    plt.plot(win_rate, label='win')
+    plt.plot(draw_rate, label='draw')
+    plt.plot(lose_rate, label='lose')
+    plt.plot(reward, label='reward')
+    plt.legend()
+    plt.savefig(path)
