@@ -22,7 +22,7 @@ $$
 Q_{new}(s_t,a_t) \leftarrow (1-\alpha)Q_{old}(s_t,a_t)+\alpha(r_t+\gamma \underset{a\in A_{t+1}}{max}Q(s_{t+1},a))
 $$
 
-また、行動の決定方法としてその状態下$s$で$Q$が最大となる行動$a_t$を選択していくと局所解に陥ってしまうことがあるので、$\epsilon$-greedy法などが行動選択に用いられる。
+また、行動の決定方法としてその状態下$s$で$Q$が最大となる行動$a_t$を選択していくと局所解に陥ってしまうことがあるので、$\epsilon$-greedy法やBoltzmann選択法(Soft max手法)などが行動選択に用いられる。
 
 ## オセロでのQ-learning
 

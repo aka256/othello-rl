@@ -37,6 +37,8 @@ class OthelloQLearningManager:
     """
     コンストラクタ
 
+    Parameters
+    ----------
     board_size : int
       盤のサイズ
     features : othello.features.Features
