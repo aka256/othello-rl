@@ -176,6 +176,7 @@ class OthelloQLearningManager:
     lose_rate = []
     draw_rate = []
     reward = []
+    x = list(range(0,len(self.learning_results),span))
     for i in range(len(self.learning_results)//span):
       r = 0
       l = [0, 0, 0]
@@ -188,9 +189,9 @@ class OthelloQLearningManager:
       lose_rate.append(l[0]/span)
       reward.append(r/span)
     
-    plt.plot(win_rate, label='win')
-    plt.plot(draw_rate, label='draw')
-    plt.plot(lose_rate, label='lose')
-    plt.plot(reward, label='reward')
+    plt.plot(x, win_rate, label='win')
+    plt.plot(x, draw_rate, label='draw')
+    plt.plot(x, lose_rate, label='lose')
+    plt.plot(x, reward, label='reward')
     plt.legend()
     plt.savefig(path)

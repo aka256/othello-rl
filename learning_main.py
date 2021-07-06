@@ -14,8 +14,8 @@ def main():
   ql_manager = OthelloQLearningManager(board_size=4, 
                                       features=Featuresv2(), 
                                       opp_agent=MinMaxAgent(3, PositionalEvaluation4x4v2()), 
-                                      ql=QLearning(alpha=0.3, gamma=0.6, data={}), 
-                                      epsilon=0.5, 
+                                      ql=QLearning(alpha=0.3, gamma=0.4, data={}), 
+                                      epsilon=0.2, 
                                       reward=Reward4x4v1())
 
   learn_mp( 2, 
@@ -26,7 +26,7 @@ def main():
             True, 
             10)
   
-  ql_manager.gen_learned_trend_graph('./save/test10/trend.png', 100)
+  ql_manager.gen_learned_trend_graph('./save/test10/trend.png', 50)
   #ql_manager.gen_result_graph('lose_line', './save/test8/lose.png')
   #ql_manager.gen_result_graph('win_line', './save/test8/win.png')
   #test_graph('vsRandom_alt.png', 4, Featuresv2(), 0, './save/test7/', 'test.json', 10, RandomAgent(), 10000, 2)
