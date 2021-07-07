@@ -6,8 +6,8 @@ class Reward(metaclass=ABCMeta):
   def get(self, othello: OthelloBoard, ql_num: int) -> float:
     pass
 
-class Rewardv1(Reward):
-  scale = 10
+class Reward8x8v1(Reward):
+  scale = 1
   def get(self, othello: OthelloBoard8x8, ql_num: int) -> float:
     result = othello.get_result()
     if result != -1:

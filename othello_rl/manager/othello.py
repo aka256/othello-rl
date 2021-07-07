@@ -1,5 +1,6 @@
 import random
 import json
+import math
 from logging import getLogger
 from othello_rl.qlearning.qlearning import QLearning
 from othello_rl.error import CannotReverseError
@@ -34,7 +35,7 @@ class OthelloQLearningManager:
     扱っているゲーム
   """
 
-  def __init__(self, board_size: int, features: Features, opp_agent: Agent, ql: QLearning, epsilon: float, reward: Reward) -> None:
+  def __init__(self, board_size: int, features: Features, opp_agent: Agent, ql: QLearning, reward: Reward, policy_type: str, policy_option: list[float]) -> None:
     """
     コンストラクタ
 
@@ -48,21 +49,27 @@ class OthelloQLearningManager:
       相手のエージェント
     ql : qlearning.qlearning.QLearning
       Q-Learning用のクラス
-    epsilon : float
-      ε-Greedy法でのε
     reward : othello.reward.Reward
       報酬選択方法
+    policy_type : str
+      手法の種類
+    policy_option : list[float]
+      手法の定数等
     """
     self.board_size = board_size
     self.features = features
     self.agent = opp_agent
     self.ql = ql
-    self.epsilon = epsilon
     self.reward = reward
+    self.policy_type = policy_type
+    if self.policy_type == 'e':
+      self.epsilon = policy_option[0]
+    elif self.policy_type == 'b':
+      self.temperature = policy_option[0]
 
     self.learning_results = []
 
-  def __step(self) -> tuple[int, int, float]:
+  def __step_epsilon_greedy(self) -> tuple[int, int, float]:
     """
     ε-Greedy法に基づいて、オセロを一手進める
 
@@ -91,6 +98,34 @@ class OthelloQLearningManager:
 
     return tmp[idx][0], tmp[idx][1], q_list[idx]
 
+  def __step_boltzmann(self) -> tuple[int, int, float]:
+    """
+    Boltzmann手法に基づいて、オセロを一手進める
+
+    Returns
+    -------
+    s : int
+      状態、特徴量
+    a : int
+      行動
+    q_old : float
+      Q値, Q(s, a)
+    """
+    candidate_list = self.game.get_candidate_list()
+    q_list = []
+    tmp = []
+    for x, y in candidate_list:
+      tmp.append([self.features.get_index(self.game), x*8+y])
+      q_list.append(self.ql.get(tmp[-1][0], tmp[-1][1]))
+    
+    p = [math.exp(x/self.temperature) for x in q_list]
+    p_sum = sum(p)
+    p = [x/p_sum for x in p]
+    idx = p.index(max(p))
+    self.game.reverse(candidate_list[idx][0], candidate_list[idx][1], False)
+
+    return tmp[idx][0], tmp[idx][1], q_list[idx]
+
   def learn_one_game(self, do_from_opponent: bool = True) -> None:
     """
     1ゲーム分の学習を行う
@@ -115,7 +150,11 @@ class OthelloQLearningManager:
         if not result:
           raise CannotReverseError()
       else:
-        action = list(self.__step())
+        if self.policy_type == 'e':
+          action = list(self.__step_epsilon_greedy())
+        elif self.policy_type == 'b':
+          action = list(self.__step_boltzmann())
+
         if do_from_opponent:
           reward = self.reward.get(self.game, 1)
         else:
