@@ -142,7 +142,7 @@ class OthelloQLearningManager:
     opp_turn = do_from_opponent
     action_data = []
     reward_sum = 0
-    self_count = 0
+    self_count = 1
 
     while True:
       if opp_turn:
@@ -162,7 +162,7 @@ class OthelloQLearningManager:
         action.append(reward)
         action_data.append(action)
         reward_sum += reward
-        self_count += 1
+        #self_count += 1
         
       next_state = self.game.get_next_state()
       if next_state == 1:
@@ -179,8 +179,14 @@ class OthelloQLearningManager:
       reward = self.reward.get(self.game, 0)
     action_data[-1][-1] = reward
 
-    self.learning_results.append([reward, reward_sum/self_count]) # [result, reward_ave]
-
+    if reward > 0:
+      r = 1
+    elif reward == 0:
+      r = 0
+    else:
+      r = -1
+    self.learning_results.append([r, reward_sum/self_count]) # [result, reward_ave]
+    
     # learning
     before_q = 0
     for s, a, q_old, reward in action_data[::-1]:
